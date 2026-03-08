@@ -1,4 +1,4 @@
-# CLAUDE.md – Instruktioner för After Effects Expression Library
+# CLAUDE.md – Instruktioner för After Effects Utils Library
 
 Det här dokumentet styr hur Claude Code ska jobba i det här repot.
 
@@ -6,9 +6,10 @@ Det här dokumentet styr hur Claude Code ska jobba i det här repot.
 
 ## Projektbeskrivning
 
-Det här är ett bibliotek av After Effects expressions skrivna i JavaScript/ExtendScript.
-Målet är att samla återanvändbara expressions organiserade per kategori.
-Filerna är avsedda att kopieras och klistras in direkt i After Effects – de körs inte som externa script.
+Det här är ett bibliotek av After Effects expressions och ScriptUI-paneler.
+Målmiljö: **Adobe After Effects 2026**.
+Expressions är avsedda att kopieras och klistras in direkt i After Effects.
+Scripts är ScriptUI-paneler som installeras under `Scripts/ScriptUI Panels/` i AE.
 
 ---
 
@@ -19,6 +20,7 @@ Filerna är avsedda att kopieras och klistras in direkt i After Effects – de k
 - Commita direkt till `main` för alla ändringar, stora som små.
 - Varje commit ska ha ett beskrivande meddelande på engelska, t.ex:
   - `Add bounce ease expression`
+  - `Add flicker ScriptUI panel`
   - `Update README with new expressions`
   - `Fix looping wiggle duration bug`
 
@@ -26,21 +28,26 @@ Filerna är avsedda att kopieras och klistras in direkt i After Effects – de k
 
 ## Mappstruktur
 
-Alla expressions ska ligga i rätt kategori-mapp. Skapa mappen om den inte finns.
-
 ```
-after_effects_expression/
+Adobe_AE_Utils/
 ├── CLAUDE.md
 ├── README.md
 ├── motion/
 ├── text/
 ├── color/
-└── utility/
+├── utility/
+└── scripts/
 ```
 
 Lägg till nya kategori-mappar vid behov om ingen befintlig passar.
 
-**Exempel:** En bounce-expression hör hemma i `motion/bounce_ease.jsx`, inte i roten av repot.
+- `motion/` – rörelserelaterade expressions som bounce, wiggle, swing
+- `text/` – textrelaterade expressions
+- `color/` – färgrelaterade expressions
+- `utility/` – hjälpexpressions som clamp, delay, freeze
+- `scripts/` – ScriptUI-paneler (.jsx) som installeras i AE
+
+**Exempel:** En bounce-expression hör hemma i `motion/bounce_ease.jsx`, en ScriptUI-panel i `scripts/flicker_gate.jsx`.
 
 ---
 
@@ -49,7 +56,7 @@ Lägg till nya kategori-mappar vid behov om ingen befintlig passar.
 - Använd **snake_case**: `bounce_ease.jsx`
 - Filändelse ska vara `.jsx`
 - Inga mellanslag i filnamn
-- Namnet ska beskriva vad expressionen gör
+- Namnet ska beskriva vad filen gör
 
 ---
 
@@ -61,17 +68,30 @@ Varje fil ska börja med en header-kommentar:
 /**
  * @name        Bounce Ease
  * @category    motion
+ * @type        expression
  * @description Lägger till en studsande ease på en egenskap.
  * @usage       Applicera på position, skala eller rotation.
+ * @ae-version  2026
  */
 ```
 
-After Effects-kodregler
-
-Referera alltid till effektparametrar med namn, inte index: effect("Fractal Noise")("Contrast") – aldrig effect("Fractal Noise")(4). Index kan förskjutas vid AE-uppdateringar eller om effekter läggs till i annan ordning.
+För ScriptUI-paneler, använd `@type script` istället för `expression`.
 
 ---
+
+## After Effects-kodregler
+
+**I expressions** (klistras in direkt i AE):
+- Referera alltid till effektparametrar med **namn**, inte index: `effect("Fractal Noise")("Contrast")` – aldrig `effect("Fractal Noise")(4)`. Index kan förskjutas om effekter läggs till eller AE uppdateras.
+- Använd JavaScript expression engine (standard i AE 2026), inte Legacy ExtendScript engine.
+
+**I ScriptUI-scripts** (ExtendScript .jsx-filer):
+- Använd **match names** för att referera till effekter och parametrar, t.ex. `layer.property("ADBE Effect Parade").property("ADBE Gaussian Blur")`. Match names är språkoberoende och fungerar oavsett vilket språk AE är inställt på.
+- Använd aldrig numeriska index för att referera till effektparametrar.
+
+---
+
 ## README.md
 
-Uppdatera `README.md` varje gång en ny expression läggs till.
-README ska innehålla en lista över alla expressions med korta beskrivningar, grupperade per kategori.
+Uppdatera `README.md` varje gång en ny fil läggs till.
+README ska innehålla en lista över alla expressions och scripts med korta beskrivningar, grupperade per kategori.
