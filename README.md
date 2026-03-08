@@ -13,7 +13,9 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 
 > Expressions related to movement – bounce, wiggle, swing, etc.
 
-*No expressions yet.*
+| File | Description |
+|------|-------------|
+| `spike_ease_2d.jsx` | Sharp tanh-based ease for 2D position. Simulates a quick spike movement with controllable sharpness, start time, duration, and distance. Apply to a layer's Position property. |
 
 ---
 
