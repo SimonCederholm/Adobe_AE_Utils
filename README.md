@@ -47,7 +47,9 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 
 > ScriptUI panels (`.jsx`) installed in After Effects.
 
-*No scripts yet.*
+| File | Description |
+|------|-------------|
+| `film_damage_suite.jsx` | ScriptUI panel that creates a full film damage simulation stack in the active composition. Adds nine individually togglable layers: Gate Weave, Grain, Scratches, Blobs, Damage, Dust, Flicker, Color Correction, and Light Leaks – each built from native AE effects and expressions. Install under `Scripts/ScriptUI Panels/` and open via the Window menu. |
 
 ---
 
