@@ -7,27 +7,31 @@
  * @usage       Kopiera till Scripts/ScriptUI Panels/ och öppna via Window-menyn i AE.
  * @ae-version  2026
  *
- * VERIFIERINGSLISTA – kontrollera dessa i After Effects efter installation:
+ * VERIFIERA I AE – dropdown-index (AE använder 1-baserad indexering):
  *
- *  DROPDOWN-INDEX (kan ej lösas med match names, är versionsberoende):
- *  - Fractal Type "Dynamic"   → sp(fn, "Fractal Type", 5)  – justera vid behov
- *  - Fractal Type "Smeary"    → sp(fn, "Fractal Type", 9)  – justera vid behov
- *  - FN Blending Mode "Hard Light" → sp(fn2, "Blending Mode", 10) – justera vid behov
- *  - CC Toner Tones "Pentatone"   → sp(cc, "Tones", 3)    – justera vid behov
- *  - Set Channels Luminance       → sp(sc, "Set Alpha…", 5) – justera vid behov
- *  - Glow Operation "Screen"      → sp(gfx, "Glow Operation", 3) – justera vid behov
+ *  Fractal Type:
+ *    Basic=1, Turbulent Smooth=2, Turbulent Basic=3, Turbulent Sharp=4,
+ *    Turbulent Sharper=5, Dynamic=6, Dynamic Twist=7, Max=8, Rocky=9, Smeary=10
  *
- *  ÖVRIGT:
- *  - Effektparameter-namn (t.ex. "Contrast", "Blurriness") är display names –
- *    fungerar på engelska AE; kan misslyckas på andra AE-språkinställningar.
- *  - Lumetri Color Look-preset (t.ex. Cinespace 2383) och Highlight Tint sätts
- *    manuellt i Effect Controls efter att lagret skapats.
- *  - CC Toner Midtones-expression wiggle(5,1) på LIGHT LEAKS wigglar alla RGB-kanaler
- *    oberoende (ej enkel brightness-wiggle) → kan ge färgflimmer. Justera vid behov.
- *  - Channel Mixer "Blue-Green"/"Blue-Blue" är display names – verifiera i EC.
- *  - Levels Output Black 2500 / Output White 30 000 är angivna för 16-bitsprojekt.
- *    Panelen sätter projektet till 16 bpc vid "Lägg till alla". Vid enskild knapp
- *    sätts 16 bpc per funktion för att säkerställa korrekta värden.
+ *  Fractal Noise Blending Mode (förenklad lista i effekten):
+ *    None=1, Multiply=2, Screen=3, Overlay=4, Hard Light=5 – justera vid behov.
+ *
+ *  Set Channels "Set Alpha to Source":
+ *    Don't Set=1, Full On=2, Layer Red=3, Layer Green=4, Layer Blue=5,
+ *    Layer Alpha=6, Layer Hue=7, Layer Saturation=8, Layer Luminance=9
+ *
+ *  Glow Operation: Add=1, Screen=2
+ *
+ *  CC Toner Tones: Duotone=1, Tritone=2, Pentatone=3
+ *
+ *  Lumetri Color Look-preset (Cinespace 2383sRGB6bit) och Highlight Tint
+ *  (Light Blue/Cyan) sätts manuellt i Effect Controls – kan ej sättas via script.
+ *
+ *  Effektparameter-namn är engelska display names och kan misslyckas på
+ *  icke-engelska AE-installationer.
+ *
+ *  Levels Output Black 2500 / Output White 30000 är 16-bitsvärden.
+ *  Projektet sätts till 16 bpc automatiskt av panelen.
  */
 (function filmDamagePanel(thisObj) {
 
@@ -91,18 +95,14 @@
         return null;
     }
 
-    // Sätt värde – söker direkt i effekten, sedan ett djup och sedan två djup.
-    // Krävs för t.ex. Sub Influence/Sub Scaling i Fractal Noise (Sub Settings → Transform).
+    // Generisk setter – söker direkt, ett djup och två djup (för okända effekter)
     function sp(fx, propName, val) {
         if (!fx) return;
-        // Direkt
         try { fx.property(propName).setValue(val); return; } catch (e) {}
-        // Ett djup (t.ex. Transform-undergruppen i Fractal Noise)
         try {
             for (var i = 1; i <= fx.numProperties; i++) {
                 var sub = fx.property(i);
                 try { sub.property(propName).setValue(val); return; } catch (e) {}
-                // Två djup (t.ex. Sub Settings inuti Transform i Fractal Noise)
                 try {
                     for (var j = 1; j <= sub.numProperties; j++) {
                         try { sub.property(j).property(propName).setValue(val); return; } catch (e) {}
@@ -112,17 +112,14 @@
         } catch (e) {}
     }
 
-    // Sätt expression – söker direkt, ett djup och två djup (se sp-kommentar).
+    // Generisk expression-setter – söker direkt, ett djup och två djup
     function se(fx, propName, expr) {
         if (!fx) return;
-        // Direkt
         try { fx.property(propName).expression = expr; return; } catch (e) {}
-        // Ett djup
         try {
             for (var i = 1; i <= fx.numProperties; i++) {
                 var sub = fx.property(i);
                 try { sub.property(propName).expression = expr; return; } catch (e) {}
-                // Två djup
                 try {
                     for (var j = 1; j <= sub.numProperties; j++) {
                         try { sub.property(j).property(propName).expression = expr; return; } catch (e) {}
@@ -130,6 +127,27 @@
                 } catch (e2) {}
             }
         } catch (e) {}
+    }
+
+    // Fractal Noise setter – söker explicit via kända sub-grupper:
+    //   direkt → Transform → Transform > Sub Settings → Evolution Options → generisk fallback
+    function fnSp(fn, name, val) {
+        if (!fn) return;
+        try { fn.property(name).setValue(val); return; } catch (e) {}
+        try { fn.property("Transform").property(name).setValue(val); return; } catch (e) {}
+        try { fn.property("Transform").property("Sub Settings").property(name).setValue(val); return; } catch (e) {}
+        try { fn.property("Evolution Options").property(name).setValue(val); return; } catch (e) {}
+        sp(fn, name, val);
+    }
+
+    // Fractal Noise expression-setter – samma söksökvägar som fnSp
+    function fnSe(fn, name, expr) {
+        if (!fn) return;
+        try { fn.property(name).expression = expr; return; } catch (e) {}
+        try { fn.property("Transform").property(name).expression = expr; return; } catch (e) {}
+        try { fn.property("Transform").property("Sub Settings").property(name).expression = expr; return; } catch (e) {}
+        try { fn.property("Evolution Options").property(name).expression = expr; return; } catch (e) {}
+        se(fn, name, expr);
     }
 
     // Skapa adjustment layer
@@ -156,7 +174,8 @@
     // ── Lagerskapande funktioner ───────────────────────────────────────────────
 
     // ── 1. GATE WEAVE ─────────────────────────────────────────────────────────
-    // Adjustment Layer | Transform-effekt med position-expression + scale 101.5%
+    // Adjustment Layer
+    // TRANSFORM: Position (expression), Scale 101.5%
     function createGateWeave(comp) {
         var l = mkAdj(comp, N.GATE_WEAVE);
         l.moveToBeginning();
@@ -164,13 +183,15 @@
         if (tfx) {
             se(tfx, "Position",
                 "x = wiggle(12, .5)[0]; y = wiggle(3, .15, 3, 4)[1]; [x, y]");
-            // Scale i Transform-effekten är en 1D-procent-property
             sp(tfx, "Scale", 101.5);
         }
     }
 
     // ── 2. GRAIN ──────────────────────────────────────────────────────────────
-    // Adjustment Layer | Noise 10% + Gaussian Blur 6 + Unsharp Mask 300/3
+    // Adjustment Layer
+    // NOISE: Amount 10%
+    // GAUSSIAN BLUR: Blurriness 6
+    // UNSHARP MASK: Amount 300, Radius 3
     function createGrain(comp) {
         var l = mkAdj(comp, N.GRAIN);
         l.moveToBeginning();
@@ -185,8 +206,10 @@
 
     // ── 3. SCRATCHES ──────────────────────────────────────────────────────────
     // Solid (Multiply) | Scale 100×2000%
-    // Fractal Noise (Invert, Contrast 200, Brightness 110, Width 25, Height 10000)
-    // Turbulent Displace (Amount wiggle, Size wiggle, Complexity 3)
+    // FRACTAL NOISE: Invert, Contrast 200, Brightness 110, Width 25, Height 10000,
+    //               Evolution (time*200)
+    // TURBULENT DISPLACE: Amount 10+wiggle, Size 50+wiggle, Complexity 3,
+    //                     Evolution (time*24)
     function createScratches(comp) {
         var l = mkSolid(comp, N.SCRATCHES);
         l.blendingMode = BlendingMode.MULTIPLY;
@@ -194,17 +217,18 @@
             l.property("Transform").property("Scale").setValue([100, 2000]);
         } catch (e) {}
         l.moveToBeginning();
+
         var fn = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn) {
-            sp(fn, "Invert", true);
-            sp(fn, "Contrast", 200);
-            sp(fn, "Brightness", 110);
-            // Scale Width/Height och Uniform Scaling sitter i Transform-undergruppen
-            sp(fn, "Uniform Scaling", false);
-            sp(fn, "Scale Width", 25);
-            sp(fn, "Scale Height", 10000);
-            se(fn, "Evolution", "time * 200");
+            fnSp(fn, "Invert", true);
+            fnSp(fn, "Contrast", 200);
+            fnSp(fn, "Brightness", 110);
+            fnSp(fn, "Uniform Scaling", false);
+            fnSp(fn, "Scale Width", 25);
+            fnSp(fn, "Scale Height", 10000);
+            fnSe(fn, "Evolution", "time * 200");
         }
+
         var td = addFX(l, "ADBE Turbulent Displace", "Turbulent Displace");
         if (td) {
             sp(td, "Amount", 10);
@@ -217,108 +241,125 @@
     }
 
     // ── 4. BLOBS ──────────────────────────────────────────────────────────────
-    // Solid (Multiply) | Fractal Noise (Dynamic≈5, Invert, Contrast 1875, Brightness 880)
-    // CC Toner (Midtones #2C5F4A)
-    //
-    // VERIFIERA: Fractal Type "Dynamic" är angivet som index 5.
-    //            Kontrollera i Effect Controls och justera vid behov.
+    // Solid (Multiply)
+    // FRACTAL NOISE: Fractal Type Dynamic (1-indexerat=6), Invert,
+    //               Contrast 1875, Brightness 880, Scale 200,
+    //               Random Seed (time*100)
+    // CC TONER: Midtones #2C5F4A
     function createBlobs(comp) {
         var l = mkSolid(comp, N.BLOBS);
         l.blendingMode = BlendingMode.MULTIPLY;
         l.moveToBeginning();
+
         var fn = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn) {
-            sp(fn, "Fractal Type", 5); // Dynamic ≈ index 5 – verifiera
-            sp(fn, "Invert", true);
-            sp(fn, "Contrast", 1875);
-            sp(fn, "Brightness", 880);
-            sp(fn, "Scale", 200);
-            se(fn, "Random Seed", "time * 100");
+            fnSp(fn, "Fractal Type", 6); // Dynamic = index 6 (1-baserat)
+            fnSp(fn, "Invert", true);
+            fnSp(fn, "Contrast", 1875);
+            fnSp(fn, "Brightness", 880);
+            fnSp(fn, "Scale", 200);
+            fnSe(fn, "Random Seed", "time * 100");
         }
+
         var cc = addFX(l, "CC Toner", "CC Toner");
         sp(cc, "Midtones", hexToRgb("#2C5F4A"));
     }
 
     // ── 5. DAMAGE ─────────────────────────────────────────────────────────────
     // Solid (Normal)
-    // Fractal Noise 1: Contrast 1000, Brightness -460, Width 300, Height wiggle
-    // Extract: Black Point 20, Black Softness 20
-    // Fractal Noise 2: Contrast 313, Brightness 40, Scale 50, Blending Hard Light≈10
-    // CC Toner (Midtones #2FC35E)
+    // FRACTAL NOISE 1: Contrast 1000, Brightness -460, Uniform Scaling off,
+    //                  Scale Width 300, Scale Height 500+wiggle(24,400),
+    //                  Random Seed (time*24)
+    // EXTRACT: Black Point 20, Black Softness 20
+    // FRACTAL NOISE 2: Contrast 313, Brightness 40, Scale 50,
+    //                  Blending Mode Hard Light (1-indexerat≈5)
+    // CC TONER: Midtones #2FC35E
     //
-    // VERIFIERA: Blending Mode "Hard Light" inom Fractal Noise är angivet som index 10.
-    //            Kontrollera i Effect Controls och justera vid behov.
+    // VERIFIERA: Blending Mode Hard Light – index 5 i förenklad FN-lista.
+    //            Justera om fel blend mode appliceras.
     function createDamage(comp) {
         var l = mkSolid(comp, N.DAMAGE);
         l.blendingMode = BlendingMode.NORMAL;
         l.moveToBeginning();
+
         var fn1 = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn1) {
-            sp(fn1, "Contrast", 1000);
-            sp(fn1, "Brightness", -460);
-            sp(fn1, "Uniform Scaling", false);
-            sp(fn1, "Scale Width", 300);
-            sp(fn1, "Scale Height", 500);
-            se(fn1, "Scale Height", "wiggle(24, 400)");
-            se(fn1, "Random Seed", "time * 24");
+            fnSp(fn1, "Contrast", 1000);
+            fnSp(fn1, "Brightness", -460);
+            fnSp(fn1, "Uniform Scaling", false);
+            fnSp(fn1, "Scale Width", 300);
+            fnSp(fn1, "Scale Height", 500);
+            fnSe(fn1, "Scale Height", "wiggle(24, 400)");
+            fnSe(fn1, "Random Seed", "time * 24");
         }
+
         var ex = addFX(l, "ADBE Extract", "Extract");
         if (ex) {
             sp(ex, "Black Point", 20);
             sp(ex, "Black Softness", 20);
         }
+
         var fn2 = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn2) {
-            sp(fn2, "Contrast", 313);
-            sp(fn2, "Brightness", 40);
-            sp(fn2, "Scale", 50);
-            sp(fn2, "Blending Mode", 10); // Hard Light ≈ index 10 – verifiera
+            fnSp(fn2, "Contrast", 313);
+            fnSp(fn2, "Brightness", 40);
+            fnSp(fn2, "Scale", 50);
+            fnSp(fn2, "Blending Mode", 5); // Hard Light ≈ index 5 – verifiera
         }
+
         var cc = addFX(l, "CC Toner", "CC Toner");
         sp(cc, "Midtones", hexToRgb("#2FC35E"));
     }
 
     // ── 6. DUST ───────────────────────────────────────────────────────────────
     // Solid (Normal)
-    // Fractal Noise (Smeary≈9, Invert, Contrast 3000, Brightness -2925, Sub Influence 30%)
-    // Set Channels (Alpha = Luminance≈5)
-    // Noise 100% + Unsharp Mask 200/2 + Gaussian Blur 3
-    //
-    // VERIFIERA: Fractal Type "Smeary" ≈ index 9.
-    //            Set Alpha to Source Luminance ≈ index 5.
-    //            Sub Influence och Sub Scaling söks två djup ned (Sub Settings → Transform).
+    // FRACTAL NOISE: Fractal Type Smeary (1-indexerat=10), Invert,
+    //               Contrast 3000, Brightness -2925, Scale 200, Complexity 3,
+    //               Sub Influence 30%, Sub Scaling 50%, Random Seed (time*24)
+    // SET CHANNELS: Set Alpha to Source = Luminance (1-indexerat=9)
+    // NOISE: Amount 100%
+    // UNSHARP MASK: Amount 200, Radius 2
+    // GAUSSIAN BLUR: Blurriness 3
     function createDust(comp) {
         var l = mkSolid(comp, N.DUST);
         l.blendingMode = BlendingMode.NORMAL;
         l.moveToBeginning();
+
         var fn = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn) {
-            sp(fn, "Fractal Type", 9); // Smeary ≈ index 9 – verifiera
-            sp(fn, "Invert", true);
-            sp(fn, "Contrast", 3000);
-            sp(fn, "Brightness", -2925);
-            sp(fn, "Scale", 200);
-            sp(fn, "Complexity", 3);
-            // Sub Influence och Sub Scaling sitter i Sub Settings (inne i Transform).
-            // sp() söker nu två djup för att nå dessa.
-            sp(fn, "Sub Influence", 30);
-            sp(fn, "Sub Scaling", 50);
-            se(fn, "Random Seed", "time * 24");
+            fnSp(fn, "Fractal Type", 10); // Smeary = index 10 (1-baserat)
+            fnSp(fn, "Invert", true);
+            fnSp(fn, "Contrast", 3000);
+            fnSp(fn, "Brightness", -2925);
+            fnSp(fn, "Scale", 200);
+            fnSp(fn, "Complexity", 3);
+            // Sub Influence/Sub Scaling: sitter i Sub Settings inuti Transform.
+            // fnSp söker denna sökväg explicit.
+            fnSp(fn, "Sub Influence", 30);
+            fnSp(fn, "Sub Scaling", 50);
+            fnSe(fn, "Random Seed", "time * 24");
         }
-        // VERIFIERA: "Set Alpha to Source" Luminance – index 5 kan variera.
+
+        // Set Alpha to Source: Luminance = index 9 (1-baserat)
+        // Don't Set=1, Full On=2, Layer Red=3, Green=4, Blue=5,
+        // Alpha=6, Hue=7, Saturation=8, Luminance=9
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 5);
+        sp(sc, "Set Alpha to Source", 9);
+
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
+
         var ufx = addFX(l, "ADBE Unsharp Mask", "Unsharp Mask");
         sp(ufx, "Amount", 200);
         sp(ufx, "Radius", 2);
+
         var bfx = addFX(l, "ADBE Gaussian Blur 2", "Gaussian Blur");
         sp(bfx, "Blurriness", 3);
     }
 
     // ── 7. FLICKER ────────────────────────────────────────────────────────────
-    // Adjustment Layer | Exposure wiggle(12, .1)
+    // Adjustment Layer
+    // EXPOSURE: Exposure (wiggle(12, .1))
     function createFlicker(comp) {
         var l = mkAdj(comp, N.FLICKER);
         l.moveToBeginning();
@@ -328,40 +369,38 @@
 
     // ── 8. COLOR CORRECTION ───────────────────────────────────────────────────
     // Adjustment Layer
-    // Glow (Threshold 50%, Radius 500, Intensity 0.2, Operation: Screen≈3)
-    // Channel Mixer (Blue-Green 50, Blue-Blue 50)
-    // Lumetri Color (Look-preset sätts manuellt i Effect Controls)
-    // CC Vignette (Amount 50)
-    // Levels (Output Black 2500, Output White 30000 – 16-bpc-värden)
-    //
-    // VERIFIERA: Glow Operation "Screen" ≈ index 3.
-    //            Channel Mixer "Blue-Green"/"Blue-Blue" – display names, kan
-    //            skilja på icke-engelska AE-installationer.
-    //            Lumetri Look-preset och Highlight Tint sätts manuellt i EC.
+    // GLOW: Threshold 50%, Radius 500, Intensity 0.2,
+    //       Operation Screen (1-indexerat=2: Add=1, Screen=2)
+    // CHANNEL MIXER: Blue-Green 50, Blue-Blue 50
+    // LUMETRI COLOR: Look + Highlight Tint sätts manuellt i Effect Controls
+    // CC VIGNETTE: Amount 50
+    // LEVELS: Output Black 2500, Output White 30000 (16-bpc-värden)
     function createColorCorrection(comp) {
-        // Säkerställ 16 bpc så Levels-värdena tolkas korrekt
         try { app.project.bitsPerChannel = 16; } catch (e) {}
         var l = mkAdj(comp, N.COLOR_CORRECTION);
         l.moveToBeginning();
+
         var gfx = addFX(l, "ADBE Glow", "Glow");
         if (gfx) {
             sp(gfx, "Glow Threshold", 50);
             sp(gfx, "Glow Radius", 500);
             sp(gfx, "Glow Intensity", 0.2);
-            sp(gfx, "Glow Operation", 3); // Screen ≈ index 3 – verifiera
+            sp(gfx, "Glow Operation", 2); // Screen = index 2 (Add=1, Screen=2)
         }
-        // VERIFIERA: property-namnen är display names och kan kräva justering
-        // på icke-engelska AE-installationer.
+
         var cm = addFX(l, "ADBE Channel Mixer", "Channel Mixer");
         if (cm) {
             sp(cm, "Blue-Green", 50);
             sp(cm, "Blue-Blue", 50);
         }
-        // Look-preset och Highlight Tint sätts manuellt i Effect Controls
+
+        // Look: Cinespace 2383sRGB6bit, Highlight Tint: Light Blue/Cyan
+        // Sätts manuellt i Effect Controls – kan ej tillämpas via script.
         addFX(l, "ADBE Lumetri", "Lumetri Color");
+
         var vfx = addFX(l, "CC Vignette", "CC Vignette");
         sp(vfx, "Amount", 50);
-        // Levels – försöker ADBE Levels2 (post-CS6) med fallback till ADBE Levels
+
         var lvl = addFX(l, "ADBE Levels2", "Levels");
         if (!lvl) lvl = addFX(l, "ADBE Levels", "Levels");
         if (lvl) {
@@ -372,46 +411,50 @@
 
     // ── 9. LIGHT LEAKS ────────────────────────────────────────────────────────
     // Solid (Screen)
-    // Fractal Noise 1: Invert, Contrast 60, Brightness -30, Width 4000, Height 8000
-    // CC Toner: Pentatone≈3, Midtones wiggle(5,1), Darktones #313A4B
-    // Fractal Noise 2: Brightness -20, Width 3000, Height 6000, Complexity 1
+    // FRACTAL NOISE 1: Invert, Contrast 60, Brightness -30, Uniform Scaling off,
+    //                  Scale Width 4000, Scale Height 8000, Complexity 2,
+    //                  Evolution (time*400)
+    // CC TONER: Tones Pentatone (1-indexerat=3), Midtones (wiggle(5,1)),
+    //           Darktones #313A4B
+    // FRACTAL NOISE 2: Brightness -20, Uniform Scaling off,
+    //                  Scale Width 3000, Scale Height 6000, Complexity 1,
+    //                  Evolution (time*100)
     //
-    // VERIFIERA: CC Toner Tones "Pentatone" ≈ index 3.
-    //            Midtones expression wiggle(5,1) wigglar alla RGB-kanaler oberoende
-    //            → kan ge färgflimmer snarare än brightness-flimmer. Alternativ:
-    //            sätt en fast Midtones-färg och styr ljusleckans styrka via
-    //            lagrets Opacity-expression istället.
+    // OBS: wiggle(5,1) på CC Toner Midtones (color-property) wigglar R/G/B
+    //      oberoende → kan ge färgflimmer snarare än brightness-variation.
+    //      Ersätt med fast färg + Opacity-expression om enbart ljusvariation önskas.
     function createLightLeaks(comp) {
         var l = mkSolid(comp, N.LIGHT_LEAKS);
         l.blendingMode = BlendingMode.SCREEN;
         l.moveToBeginning();
+
         var fn1 = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn1) {
-            sp(fn1, "Invert", true);
-            sp(fn1, "Contrast", 60);
-            sp(fn1, "Brightness", -30);
-            sp(fn1, "Uniform Scaling", false);
-            sp(fn1, "Scale Width", 4000);
-            sp(fn1, "Scale Height", 8000);
-            sp(fn1, "Complexity", 2);
-            se(fn1, "Evolution", "time * 400");
+            fnSp(fn1, "Invert", true);
+            fnSp(fn1, "Contrast", 60);
+            fnSp(fn1, "Brightness", -30);
+            fnSp(fn1, "Uniform Scaling", false);
+            fnSp(fn1, "Scale Width", 4000);
+            fnSp(fn1, "Scale Height", 8000);
+            fnSp(fn1, "Complexity", 2);
+            fnSe(fn1, "Evolution", "time * 400");
         }
+
         var cc = addFX(l, "CC Toner", "CC Toner");
         if (cc) {
-            sp(cc, "Tones", 3); // Pentatone ≈ index 3 – verifiera
-            // OBS: wiggle(5,1) på en färg-property wigglar R/G/B oberoende.
-            // Resulterar i färgflimmer – justera vid behov (se kommentar ovan).
+            sp(cc, "Tones", 3); // Pentatone = index 3 (Duotone=1, Tritone=2, Pentatone=3)
             se(cc, "Midtones", "wiggle(5, 1)");
             sp(cc, "Darktones", hexToRgb("#313A4B"));
         }
+
         var fn2 = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn2) {
-            sp(fn2, "Brightness", -20);
-            sp(fn2, "Uniform Scaling", false);
-            sp(fn2, "Scale Width", 3000);
-            sp(fn2, "Scale Height", 6000);
-            sp(fn2, "Complexity", 1);
-            se(fn2, "Evolution", "time * 100");
+            fnSp(fn2, "Brightness", -20);
+            fnSp(fn2, "Uniform Scaling", false);
+            fnSp(fn2, "Scale Width", 3000);
+            fnSp(fn2, "Scale Height", 6000);
+            fnSp(fn2, "Complexity", 1);
+            fnSe(fn2, "Evolution", "time * 100");
         }
     }
 
@@ -429,7 +472,6 @@
     ];
 
     // ── Lägg till alla / Ta bort alla ─────────────────────────────────────────
-    // Mappar lagernamn → skapande-funktion för addAllLayers
     var CREATE_FNS = {};
     for (var _i = 0; _i < BTN_DATA.length; _i++) {
         CREATE_FNS[BTN_DATA[_i].name] = BTN_DATA[_i].fn;
@@ -440,7 +482,6 @@
         if (!comp) return;
         try { app.project.bitsPerChannel = 16; } catch (e) {}
         app.beginUndoGroup("Lägg till alla Film Damage-lager");
-        // LAYER_ORDER är omvänd → med moveToBeginning hamnar lagren i rätt ordning
         for (var i = 0; i < LAYER_ORDER.length; i++) {
             var name = LAYER_ORDER[i];
             if (!findLayer(comp, name)) {
@@ -470,7 +511,6 @@
         w.spacing = 4;
         w.margins = 10;
 
-        // Rubrik
         var hdrGrp = w.add("group");
         hdrGrp.alignment = ["center", "top"];
         var ttl = hdrGrp.add("statictext", undefined, "Film Damage Suite");
@@ -478,7 +518,6 @@
 
         w.add("panel", undefined, "").alignment = ["fill", "top"];
 
-        // Individuella lagerknappar
         for (var i = 0; i < BTN_DATA.length; i++) {
             (function (d) {
                 var btn = w.add("button", undefined, d.label);
@@ -499,7 +538,6 @@
 
         w.add("panel", undefined, "").alignment = ["fill", "top"];
 
-        // Globala knappar
         var addAllBtn = w.add("button", undefined, "Lägg till alla lager");
         addAllBtn.alignment = ["fill", "top"];
         addAllBtn.onClick = addAllLayers;
