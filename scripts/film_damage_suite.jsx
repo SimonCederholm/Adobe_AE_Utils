@@ -20,7 +20,10 @@
  *    Don't Set=1, Full On=2, Layer Red=3, Layer Green=4, Layer Blue=5,
  *    Layer Alpha=6, Layer Hue=7, Layer Saturation=8, Layer Luminance=9
  *
- *  Glow Operation: Add=1, Screen=2
+ *  Glow Operation: none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
+ *
+ *  Set Channels "Set Alpha to Source":
+ *    Alpha=9, Luminance=10 (bekräftat via AE-testning)
  *
  *  CC Toner Tones: Duotone=1, Tritone=2, Pentatone=3
  *
@@ -131,12 +134,17 @@
 
     // Fractal Noise setter – söker explicit via kända sub-grupper:
     //   direkt → Transform → Transform > Sub Settings → Evolution Options → generisk fallback
+    // Provar även alternativa property-namn med suffix "(%)" för procentegenskaper.
     function fnSp(fn, name, val) {
         if (!fn) return;
-        try { fn.property(name).setValue(val); return; } catch (e) {}
-        try { fn.property("Transform").property(name).setValue(val); return; } catch (e) {}
-        try { fn.property("Transform").property("Sub Settings").property(name).setValue(val); return; } catch (e) {}
-        try { fn.property("Evolution Options").property(name).setValue(val); return; } catch (e) {}
+        var names = [name, name + " (%)"];
+        for (var n = 0; n < names.length; n++) {
+            var nm = names[n];
+            try { fn.property(nm).setValue(val); return; } catch (e) {}
+            try { fn.property("Transform").property(nm).setValue(val); return; } catch (e) {}
+            try { fn.property("Transform").property("Sub Settings").property(nm).setValue(val); return; } catch (e) {}
+            try { fn.property("Evolution Options").property(nm).setValue(val); return; } catch (e) {}
+        }
         sp(fn, name, val);
     }
 
@@ -183,7 +191,12 @@
         if (tfx) {
             se(tfx, "Position",
                 "x = wiggle(12, .5)[0]; y = wiggle(3, .15, 3, 4)[1]; [x, y]");
-            sp(tfx, "Scale", 101.5);
+            // Provar skalär (uniform scale) och array-fallback för Transform-effektens Scale
+            try { tfx.property("Scale").setValue(101.5); } catch(e) {
+                try { tfx.property("Scale").setValue([101.5, 101.5]); } catch(e2) {
+                    sp(tfx, "Scale", 101.5);
+                }
+            }
         }
     }
 
@@ -340,11 +353,12 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // Set Alpha to Source: Luminance = index 9 (1-baserat)
-        // Don't Set=1, Full On=2, Layer Red=3, Green=4, Blue=5,
-        // Alpha=6, Hue=7, Saturation=8, Luminance=9
+        // Set Alpha to Source: Luminance = index 10 (1-baserat)
+        // Don't Set=1, Full On=2, Red=3, Green=4, Blue=5,
+        // Alpha=6, Hue=7, Saturation=8, (något)=9, Luminance=10
+        // Bekräftat av användartestning: Alpha=9, Luminance ett steg nedanför=10
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 9);
+        sp(sc, "Set Alpha to Source", 10);
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
@@ -370,11 +384,11 @@
     // ── 8. COLOR CORRECTION ───────────────────────────────────────────────────
     // Adjustment Layer
     // GLOW: Threshold 50%, Radius 500, Intensity 0.2,
-    //       Operation Screen (1-indexerat=2: Add=1, Screen=2)
+    //       Operation Screen (1-indexerat=6: none=1,normal=2,add=3,multiply=4,dissolve=5,screen=6)
     // CHANNEL MIXER: Blue-Green 50, Blue-Blue 50
     // LUMETRI COLOR: Look + Highlight Tint sätts manuellt i Effect Controls
     // CC VIGNETTE: Amount 50
-    // LEVELS: Output Black 2500, Output White 30000 (16-bpc-värden)
+    // LEVELS: Input Black 2500, Input White 30000 (16-bpc-värden)
     function createColorCorrection(comp) {
         try { app.project.bitsPerChannel = 16; } catch (e) {}
         var l = mkAdj(comp, N.COLOR_CORRECTION);
@@ -385,7 +399,7 @@
             sp(gfx, "Glow Threshold", 50);
             sp(gfx, "Glow Radius", 500);
             sp(gfx, "Glow Intensity", 0.2);
-            sp(gfx, "Glow Operation", 2); // Screen = index 2 (Add=1, Screen=2)
+            sp(gfx, "Glow Operation", 6); // Screen = index 6 (none=1,normal=2,add=3,multiply=4,dissolve=5,screen=6)
         }
 
         var cm = addFX(l, "ADBE Channel Mixer", "Channel Mixer");
@@ -404,8 +418,8 @@
         var lvl = addFX(l, "ADBE Levels2", "Levels");
         if (!lvl) lvl = addFX(l, "ADBE Levels", "Levels");
         if (lvl) {
-            sp(lvl, "Output Black", 2500);
-            sp(lvl, "Output White", 30000);
+            sp(lvl, "Input Black", 2500);
+            sp(lvl, "Input White", 30000);
         }
     }
 
