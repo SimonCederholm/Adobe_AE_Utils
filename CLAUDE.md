@@ -98,11 +98,13 @@ Vissa AE-effekter har **nästlade property-grupper** där parametrarna inte sitt
 - **`ADBE Fractal Noise`** – Transform-parametrar sitter i en `Transform`-sub-grupp, Evolution Options i en separat grupp.
 
 **Regel:** När en effekt har känd komplex struktur, skriv en **dedikerad setter-funktion** (som `setLevels()` och `fnSp()` i film_damage_suite.jsx) som explicit provar:
-1. Match names direkt på effekten
+1. Match names direkt på effekten – **endast om de är verifierade i AE SDK eller testad i AE**. Använd aldrig gissade match names; om de råkar träffa fel property kan värdet bli extremt felaktigt (t.ex. 2500 → 81 920 000 om en intern float-property träffas).
 2. Display names direkt på effekten (engelska fallback)
 3. Display names i varje sub-grupp (fallback för nästlad struktur)
 
 Använd aldrig den generiska `sp()` för Levels eller andra effekter med känd nästlad struktur.
+
+**Match names för Levels Output-parametrar är ej verifierade** – `setLevels()` i film_damage_suite.jsx använder därför enbart display names och sub-grupp-sökning.
 
 ---
 
