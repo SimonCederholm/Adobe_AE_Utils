@@ -16,7 +16,7 @@
  *    Multiply=5, Hard Light=9
  *
  *  Set Channels "Set Alpha to Source" (bekräftat):
- *    Luminance=9, Alpha=10
+ *    Luminance=4
  *
  *  Glow Operation (bekräftat):
  *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
@@ -349,9 +349,9 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // Set Alpha to Source: Luminance = index 9 (bekräftat: Alpha=10, Luminance=9)
+        // Set Alpha to Source: Luminance = index 4 (bekräftat via expression i AE)
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 9);
+        sp(sc, "Set Alpha to Source", 4);
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
