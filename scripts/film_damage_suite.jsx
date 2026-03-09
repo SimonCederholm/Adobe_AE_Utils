@@ -128,16 +128,20 @@
         } catch (e) {}
     }
 
-    // Levels-specifik setter – ADBE Levels har platt struktur, ADBE Levels2 har
-    // nästlade kanal-sub-grupper. sp() hittar inte Output Black/White i nästlad
-    // struktur. Match names för Levels Output-parametrar är ej verifierade och
-    // används därför inte – söker display names direkt eller i sub-grupper.
-    function setLevels(fx, outBlack, outWhite) {
+    // Levels-specifik setter – AE:s Levels-properties använder normaliserade
+    // 0.0–1.0-värden via setValue(). UI visar värdena skalade till projektets
+    // bitdjup: ×32 768 för 16 bpc. Parametrarna tas emot som 16-bit-värden
+    // (0–32 768) och normaliseras internt.
+    // ADBE Levels har platt struktur, ADBE Levels2 har nästlade kanal-sub-grupper.
+    // Match names för Output-parametrarna är ej verifierade och används inte.
+    function setLevels(fx, outBlack16, outWhite16) {
         if (!fx) return;
+        var black = outBlack16 / 32768;
+        var white = outWhite16 / 32768;
         // Display names direkt (fungerar vid engelska AE-installationer)
         try {
-            fx.property("Output Black").setValue(outBlack);
-            fx.property("Output White").setValue(outWhite);
+            fx.property("Output Black").setValue(black);
+            fx.property("Output White").setValue(white);
             return;
         } catch(e) {}
         // Fallback: sök i sub-grupper (ADBE Levels2 nästlar per kanal)
@@ -145,8 +149,8 @@
             for (var i = 1; i <= fx.numProperties; i++) {
                 var g = fx.property(i);
                 try {
-                    g.property("Output Black").setValue(outBlack);
-                    g.property("Output White").setValue(outWhite);
+                    g.property("Output Black").setValue(black);
+                    g.property("Output White").setValue(white);
                     return;
                 } catch(e2) {}
             }
