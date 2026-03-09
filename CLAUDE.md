@@ -85,6 +85,25 @@ För ScriptUI-paneler, använd `@type script` istället för `expression`.
 - Referera alltid till effektparametrar med **namn**, inte index: `effect("Fractal Noise")("Contrast")` – aldrig `effect("Fractal Noise")(4)`. Index kan förskjutas om effekter läggs till eller AE uppdateras.
 - Använd JavaScript expression engine (standard i AE 2026), inte Legacy ExtendScript engine.
 
+**I ScriptUI-scripts** (ExtendScript .jsx-filer):
+- Använd **match names** för att referera till effekter och parametrar, t.ex. `layer.property("ADBE Effect Parade").property("ADBE Gaussian Blur")`. Match names är språkoberoende och fungerar oavsett vilket språk AE är inställt på.
+- Använd aldrig numeriska index för att referera till effektparametrar.
+- Använd aldrig display names som enda åtkomstmetod – de är språkberoende och misslyckas på icke-engelska AE-installationer.
+
+**Nästlade effektstrukturer – VIKTIGT:**
+
+Vissa AE-effekter har **nästlade property-grupper** där parametrarna inte sitter direkt under effekten utan i sub-grupper. Den generiska `sp()`-funktionen (som söker display names) är **inte tillförlitlig** för sådana effekter och kan sätta fel parameter eller inte sätta något alls.
+
+- **`ADBE Levels2`** (Levels / Individual Controls) – parametrarna sitter i per-kanal sub-grupper (Master, Red, Green, Blue, Alpha). `sp(fx, "Output Black", val)` hittar inte parametern på toppnivån.
+- **`ADBE Fractal Noise`** – Transform-parametrar sitter i en `Transform`-sub-grupp, Evolution Options i en separat grupp.
+
+**Regel:** När en effekt har känd komplex struktur, skriv en **dedikerad setter-funktion** (som `setLevels()` och `fnSp()` i film_damage_suite.jsx) som explicit provar:
+1. Match names direkt på effekten
+2. Display names direkt på effekten (engelska fallback)
+3. Display names i varje sub-grupp (fallback för nästlad struktur)
+
+Använd aldrig den generiska `sp()` för Levels eller andra effekter med känd nästlad struktur.
+
 ---
 
 ## README.md
