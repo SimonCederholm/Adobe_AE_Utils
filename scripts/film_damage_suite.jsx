@@ -351,7 +351,7 @@
 
         // Set Alpha to Source: Luminance = index 10 (bekräftat: Alpha=9, Luminance=10)
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 10);
+        sp(sc, "Set Alpha to Source", 4);
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
