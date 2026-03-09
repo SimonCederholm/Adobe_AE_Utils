@@ -7,23 +7,19 @@
  * @usage       Kopiera till Scripts/ScriptUI Panels/ och öppna via Window-menyn i AE.
  * @ae-version  2026
  *
- * VERIFIERA I AE – dropdown-index (AE använder 1-baserad indexering):
+ * VERIFIERA I AE – dropdown-index (bekräftade via expression i AE):
  *
- *  Fractal Type:
- *    Basic=1, Turbulent Smooth=2, Turbulent Basic=3, Turbulent Sharp=4,
- *    Turbulent Sharper=5, Dynamic=6, Dynamic Twist=7, Max=8, Rocky=9, Smeary=10
+ *  Fractal Type (bekräftat):
+ *    Dynamic=7, Smeary=12
  *
- *  Fractal Noise Blending Mode (förenklad lista i effekten):
- *    None=1, Multiply=2, Screen=3, Overlay=4, Hard Light=5 – justera vid behov.
+ *  Fractal Noise Blending Mode (bekräftat):
+ *    Multiply=5, Hard Light=9
  *
- *  Set Channels "Set Alpha to Source":
- *    Don't Set=1, Full On=2, Layer Red=3, Layer Green=4, Layer Blue=5,
- *    Layer Alpha=6, Layer Hue=7, Layer Saturation=8, Layer Luminance=9
+ *  Set Channels "Set Alpha to Source" (bekräftat):
+ *    Alpha=9, Luminance=10
  *
- *  Glow Operation: none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
- *
- *  Set Channels "Set Alpha to Source":
- *    Alpha=9, Luminance=10 (bekräftat via AE-testning)
+ *  Glow Operation (bekräftat):
+ *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
  *
  *  CC Toner Tones: Duotone=1, Tritone=2, Pentatone=3
  *
@@ -33,7 +29,7 @@
  *  Effektparameter-namn är engelska display names och kan misslyckas på
  *  icke-engelska AE-installationer.
  *
- *  Levels Output Black 2500 / Output White 30000 är 16-bitsvärden.
+ *  Levels Input Black 2500 / Input White 30000 är 16-bitsvärden.
  *  Projektet sätts till 16 bpc automatiskt av panelen.
  */
 (function filmDamagePanel(thisObj) {
@@ -266,7 +262,7 @@
 
         var fn = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn) {
-            fnSp(fn, "Fractal Type", 6); // Dynamic = index 6 (1-baserat)
+            fnSp(fn, "Fractal Type", 7); // Dynamic = index 7 (bekräftat via expression i AE)
             fnSp(fn, "Invert", true);
             fnSp(fn, "Contrast", 1875);
             fnSp(fn, "Brightness", 880);
@@ -317,7 +313,7 @@
             fnSp(fn2, "Contrast", 313);
             fnSp(fn2, "Brightness", 40);
             fnSp(fn2, "Scale", 50);
-            fnSp(fn2, "Blending Mode", 5); // Hard Light ≈ index 5 – verifiera
+            fnSp(fn2, "Blending Mode", 9); // Hard Light = index 9 (bekräftat via expression i AE)
         }
 
         var cc = addFX(l, "CC Toner", "CC Toner");
@@ -340,7 +336,7 @@
 
         var fn = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn) {
-            fnSp(fn, "Fractal Type", 10); // Smeary = index 10 (1-baserat)
+            fnSp(fn, "Fractal Type", 12); // Smeary = index 12 (bekräftat via expression i AE)
             fnSp(fn, "Invert", true);
             fnSp(fn, "Contrast", 3000);
             fnSp(fn, "Brightness", -2925);
