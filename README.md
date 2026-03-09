@@ -16,6 +16,7 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 | File | Description |
 |------|-------------|
 | `spike_ease_2d.jsx` | Sharp tanh-based ease for 2D position. Simulates a quick spike movement with controllable sharpness, start time, duration, and distance. Apply to a layer's Position property. |
+| `attractor_repulsor_position.jsx` | Attracts or repels a layer's position toward/away from a null layer within a distance threshold. Polarity is determined by the null layer's name (prefix `Attractor` or `Repeller`). Apply to a layer's Position property. |
 
 ---
 

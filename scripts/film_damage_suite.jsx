@@ -349,7 +349,7 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // Set Alpha to Source: Luminance = index 4 (bekräftat via expression i AE)
+        // Set Alpha to Source: Luminance = index 10 (bekräftat: Alpha=9, Luminance=10)
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
         sp(sc, "Set Alpha to Source", 4);
 

@@ -85,10 +85,6 @@ För ScriptUI-paneler, använd `@type script` istället för `expression`.
 - Referera alltid till effektparametrar med **namn**, inte index: `effect("Fractal Noise")("Contrast")` – aldrig `effect("Fractal Noise")(4)`. Index kan förskjutas om effekter läggs till eller AE uppdateras.
 - Använd JavaScript expression engine (standard i AE 2026), inte Legacy ExtendScript engine.
 
-**I ScriptUI-scripts** (ExtendScript .jsx-filer):
-- Använd **match names** för att referera till effekter och parametrar, t.ex. `layer.property("ADBE Effect Parade").property("ADBE Gaussian Blur")`. Match names är språkoberoende och fungerar oavsett vilket språk AE är inställt på.
-- Använd aldrig numeriska index för att referera till effektparametrar.
-
 ---
 
 ## README.md
