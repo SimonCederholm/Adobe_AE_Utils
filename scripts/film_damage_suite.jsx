@@ -16,7 +16,7 @@
  *    Multiply=5, Hard Light=9
  *
  *  Set Channels "Set Alpha to Source" (bekräftat):
- *    Luminance=9, Alpha=10
+ *    Luminance=4
  *
  *  Glow Operation (bekräftat):
  *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
