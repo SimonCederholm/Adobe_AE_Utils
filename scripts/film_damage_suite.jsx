@@ -130,21 +130,10 @@
 
     // Levels-specifik setter – ADBE Levels har platt struktur, ADBE Levels2 har
     // nästlade kanal-sub-grupper. sp() hittar inte Output Black/White i nästlad
-    // struktur. Provar match names → display names direkt → sub-grupp-sökning.
+    // struktur. Match names för Levels Output-parametrar är ej verifierade och
+    // används därför inte – söker display names direkt eller i sub-grupper.
     function setLevels(fx, outBlack, outWhite) {
         if (!fx) return;
-        // Match names (språkoberoende) – ADBE Levels respektive ADBE Levels2
-        var pairs = [
-            ["ADBE Levels-0006",  "ADBE Levels-0007"],
-            ["ADBE Levels2-0006", "ADBE Levels2-0007"]
-        ];
-        for (var n = 0; n < pairs.length; n++) {
-            try {
-                fx.property(pairs[n][0]).setValue(outBlack);
-                fx.property(pairs[n][1]).setValue(outWhite);
-                return;
-            } catch(e) {}
-        }
         // Display names direkt (fungerar vid engelska AE-installationer)
         try {
             fx.property("Output Black").setValue(outBlack);
