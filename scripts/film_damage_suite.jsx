@@ -15,8 +15,9 @@
  *  Fractal Noise Blending Mode (bekräftat):
  *    Multiply=5, Hard Light=9
  *
- *  Set Channels "Set Alpha to Source" (bekräftat):
- *    Luminance=4
+ *  Set Channels "Set Alpha to Source 4's" dropdown:
+ *    Full On=1, Half On=2, Off=3, Red=4, Green=5, Blue=6,
+ *    Alpha=7, Luminance=8, Hue=9, Lightness=10, Saturation=11
  *
  *  Glow Operation (bekräftat):
  *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
@@ -378,9 +379,10 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // Set Alpha to Source: Luminance = index 10 (bekräftat: Alpha=9, Luminance=10)
+        // "Set Alpha to Source 4's" dropdown: Full On=1, Half On=2, Off=3,
+        // Red=4, Green=5, Blue=6, Alpha=7, Luminance=8, Hue=9, Lightness=10, Saturation=11
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 4);
+        sp(sc, "Set Alpha to Source 4's", 8); // Luminance = 8
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
