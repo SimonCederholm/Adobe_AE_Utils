@@ -106,6 +106,8 @@ Använd aldrig den generiska `sp()` för Levels eller andra effekter med känd n
 
 **Match names för Levels Output-parametrar är ej verifierade** – `setLevels()` i film_damage_suite.jsx använder därför enbart display names och sub-grupp-sökning.
 
+**setValue()-enheter för Levels – VIKTIGT:** AE:s Levels-properties lagrar värden normaliserat (0.0–1.0) internt. UI:t visar värdena skalade till projektets bitdjup (×32 768 för 16 bpc). Att skicka in ett råvärde som 2500 (16-bit-enhet) utan normalisering resulterar i 2500 × 32 768 = 81 920 000 i UI:t. Normalisera alltid: `setValue(value16bit / 32768)`.
+
 ---
 
 ## README.md
