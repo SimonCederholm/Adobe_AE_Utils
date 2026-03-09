@@ -16,7 +16,7 @@
  *    Multiply=5, Hard Light=9
  *
  *  Set Channels "Set Alpha to Source" (bekräftat):
- *    Alpha=9, Luminance=10
+ *    Luminance=9, Alpha=10
  *
  *  Glow Operation (bekräftat):
  *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
@@ -349,12 +349,9 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // Set Alpha to Source: Luminance = index 10 (1-baserat)
-        // Don't Set=1, Full On=2, Red=3, Green=4, Blue=5,
-        // Alpha=6, Hue=7, Saturation=8, (något)=9, Luminance=10
-        // Bekräftat av användartestning: Alpha=9, Luminance ett steg nedanför=10
+        // Set Alpha to Source: Luminance = index 9 (bekräftat: Alpha=10, Luminance=9)
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source", 10);
+        sp(sc, "Set Alpha to Source", 9);
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
@@ -414,8 +411,8 @@
         var lvl = addFX(l, "ADBE Levels2", "Levels");
         if (!lvl) lvl = addFX(l, "ADBE Levels", "Levels");
         if (lvl) {
-            sp(lvl, "Input Black", 2500);
-            sp(lvl, "Input White", 30000);
+            sp(lvl, "Output Black", 2500);
+            sp(lvl, "Output White", 30000);
         }
     }
 
@@ -459,6 +456,7 @@
 
         var fn2 = addFX(l, "ADBE Fractal Noise", "Fractal Noise");
         if (fn2) {
+            fnSp(fn2, "Blending Mode", 5); // Multiply = index 5 (bekräftat via expression i AE)
             fnSp(fn2, "Brightness", -20);
             fnSp(fn2, "Uniform Scaling", false);
             fnSp(fn2, "Scale Width", 3000);
