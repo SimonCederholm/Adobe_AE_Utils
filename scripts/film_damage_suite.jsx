@@ -29,7 +29,7 @@
  *  Effektparameter-namn är engelska display names och kan misslyckas på
  *  icke-engelska AE-installationer.
  *
- *  Levels Input Black 2500 / Input White 30000 är 16-bitsvärden.
+ *  Levels Output Black 2500 / Output White 30000 är 16-bitsvärden.
  *  Projektet sätts till 16 bpc automatiskt av panelen.
  */
 (function filmDamagePanel(thisObj) {
@@ -126,6 +126,42 @@
                 } catch (e2) {}
             }
         } catch (e) {}
+    }
+
+    // Levels-specifik setter – ADBE Levels har platt struktur, ADBE Levels2 har
+    // nästlade kanal-sub-grupper. sp() hittar inte Output Black/White i nästlad
+    // struktur. Provar match names → display names direkt → sub-grupp-sökning.
+    function setLevels(fx, outBlack, outWhite) {
+        if (!fx) return;
+        // Match names (språkoberoende) – ADBE Levels respektive ADBE Levels2
+        var pairs = [
+            ["ADBE Levels-0006",  "ADBE Levels-0007"],
+            ["ADBE Levels2-0006", "ADBE Levels2-0007"]
+        ];
+        for (var n = 0; n < pairs.length; n++) {
+            try {
+                fx.property(pairs[n][0]).setValue(outBlack);
+                fx.property(pairs[n][1]).setValue(outWhite);
+                return;
+            } catch(e) {}
+        }
+        // Display names direkt (fungerar vid engelska AE-installationer)
+        try {
+            fx.property("Output Black").setValue(outBlack);
+            fx.property("Output White").setValue(outWhite);
+            return;
+        } catch(e) {}
+        // Fallback: sök i sub-grupper (ADBE Levels2 nästlar per kanal)
+        try {
+            for (var i = 1; i <= fx.numProperties; i++) {
+                var g = fx.property(i);
+                try {
+                    g.property("Output Black").setValue(outBlack);
+                    g.property("Output White").setValue(outWhite);
+                    return;
+                } catch(e2) {}
+            }
+        } catch(e) {}
     }
 
     // Fractal Noise setter – söker explicit via kända sub-grupper:
@@ -381,7 +417,7 @@
     // CHANNEL MIXER: Blue-Green 50, Blue-Blue 50
     // LUMETRI COLOR: Look + Highlight Tint sätts manuellt i Effect Controls
     // CC VIGNETTE: Amount 50
-    // LEVELS: Input Black 2500, Input White 30000 (16-bpc-värden)
+    // LEVELS: Output Black 2500, Output White 30000 (16-bpc-värden)
     function createColorCorrection(comp) {
         try { app.project.bitsPerChannel = 16; } catch (e) {}
         var l = mkAdj(comp, N.COLOR_CORRECTION);
@@ -408,12 +444,10 @@
         var vfx = addFX(l, "CC Vignette", "CC Vignette");
         sp(vfx, "Amount", 50);
 
-        var lvl = addFX(l, "ADBE Levels2", "Levels");
-        if (!lvl) lvl = addFX(l, "ADBE Levels", "Levels");
-        if (lvl) {
-            sp(lvl, "Output Black", 2500);
-            sp(lvl, "Output White", 30000);
-        }
+        // ADBE Levels (platt struktur) prövas före ADBE Levels2 (nästlad kanal-struktur)
+        var lvl = addFX(l, "ADBE Levels", "Levels");
+        if (!lvl) lvl = addFX(l, "ADBE Levels2", "Levels");
+        setLevels(lvl, 2500, 30000);
     }
 
     // ── 9. LIGHT LEAKS ────────────────────────────────────────────────────────
