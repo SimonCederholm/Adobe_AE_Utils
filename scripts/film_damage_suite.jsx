@@ -379,10 +379,21 @@
             fnSe(fn, "Random Seed", "time * 24");
         }
 
-        // "Set Alpha to Source 4's" dropdown: Full On=1, Half On=2, Off=3,
-        // Red=4, Green=5, Blue=6, Alpha=7, Luminance=8, Hue=9, Lightness=10, Saturation=11
+        // Set Alpha To Source 4's = Luminance (index 8 i dropdown).
+        // sp() misslyckas sannolikt med namnuppslagningen – försöker därför även
+        // via numerisk property-index (8 = "Set Alpha To Source 4's" i Set Channels).
+        // Set Channels property-ordning:
+        //   1=Source Layer 1, 2=Set Red 1's, 3=Source Layer 2, 4=Set Green 2's,
+        //   5=Source Layer 3, 6=Set Blue 3's, 7=Source Layer 4, 8=Set Alpha 4's, 9=If Layer Sizes Differ
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
-        sp(sc, "Set Alpha to Source 4's", 8); // Luminance = 8
+        if (sc) {
+            var LUMINANCE = 8;
+            var didSet = false;
+            try { sc.property("Set Alpha to Source 4's").setValue(LUMINANCE); didSet = true; } catch(e) {}
+            if (!didSet) {
+                try { sc.property(8).setValue(LUMINANCE); } catch(e) {}
+            }
+        }
 
         var nfx = addFX(l, "ADBE Noise", "Noise");
         sp(nfx, "Amount of Noise", 100);
