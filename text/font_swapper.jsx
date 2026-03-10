@@ -29,7 +29,7 @@
             for (i = 1; i <= layers.length; i++) {
                 layer = layers[i];
                 if (layer instanceof TextLayer) {
-                    td = layer.property("ADBE Text Document");
+                    td = layer.property("Source Text");
                     if (td.numKeys > 0) {
                         for (k = 1; k <= td.numKeys; k++) {
                             t = td.keyTime(k);
@@ -61,7 +61,7 @@
             for (i = 1; i <= layers.length; i++) {
                 layer = layers[i];
                 if (layer instanceof TextLayer) {
-                    td = layer.property("ADBE Text Document");
+                    td = layer.property("Source Text");
                     if (td.numKeys > 0) {
                         for (k = 1; k <= td.numKeys; k++) {
                             t = td.keyTime(k);
@@ -93,10 +93,13 @@
         var result = [];
         try {
             var all = app.fonts.allFonts;
-            var i, name;
+            var i, j, parts;
             for (i = 0; i < all.length; i++) {
-                name = all[i].postScriptName;
-                if (name && name !== "") { result.push(name); }
+                parts = all[i].toString().split(",");
+                for (j = 0; j < parts.length; j++) {
+                    var name = parts[j].replace(/^\s+|\s+$/g, "");
+                    if (name !== "") { result.push(name); }
+                }
             }
             result.sort();
         } catch(e) {}
