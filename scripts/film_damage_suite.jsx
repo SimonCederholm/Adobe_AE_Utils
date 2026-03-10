@@ -15,9 +15,10 @@
  *  Fractal Noise Blending Mode (bekräftat):
  *    Multiply=5, Hard Light=9
  *
- *  Set Channels "Set Alpha to Source 4's" dropdown (bekräftade värden via debugscript i AE):
- *    Luminance=4, Saturation=8
- *    (Tidigare dokumenterade värden Full On=1..Saturation=11 var OVERIFIERADE och FELAKTIGA.)
+ *  Set Channels "Set Alpha to Source 4's" dropdown (slutledda värden):
+ *    Standardvärden från debug: Red=1, Green=2, Blue=3, Alpha=4 (varje kanal → sig själv)
+ *    Bekräftat: setValue(8) = Saturation
+ *    Slutledning: 1=Red, 2=Green, 3=Blue, 4=Alpha, 5=Luminance, 6=Hue, 7=Lightness, 8=Saturation
  *
  *  Glow Operation (bekräftat):
  *    none=1, normal=2, add=3, multiply=4, dissolve=5, screen=6
@@ -383,12 +384,12 @@
         //   1=Source Layer 1, 2=Set Red 1's, 3=Source Layer 2, 4=Set Green 2's,
         //   5=Source Layer 3, 6=Set Blue 3's, 7=Source Layer 4, 8=Set Alpha 4's, 9=If Layer Sizes Differ
         //
-        // "Set Alpha To Source 4's" dropdown-värden (bekräftade via debug i AE):
-        //   Luminance=4, Saturation=8
-        //   (Kommentaren "Luminance=8" i tidigare versioner var FELAKTIG.)
+        // "Set Alpha To Source 4's" dropdown: 1=Red, 2=Green, 3=Blue, 4=Alpha, 5=Luminance,
+        //   6=Hue, 7=Lightness, 8=Saturation
+        //   (Standardvärden från debug: R=1,G=2,B=3,A=4. setValue(8)=Saturation bekräftat.)
         var sc = addFX(l, "ADBE Set Channels", "Set Channels");
         if (sc) {
-            var LUMINANCE = 4; // bekräftat via debugscript: property(8).value == 4 → UI visar Luminance
+            var LUMINANCE = 5; // 1=Red,2=Green,3=Blue,4=Alpha,5=Luminance,6=Hue,7=Lightness,8=Saturation
             var didSet = false;
             try { sc.property("Set Alpha to Source 4's").setValue(LUMINANCE); didSet = true; } catch(e) {}
             if (!didSet) {
