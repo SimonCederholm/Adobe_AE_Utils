@@ -25,8 +25,9 @@
  *
  *  CC Toner Tones: Duotone=1, Tritone=2, Pentatone=3
  *
- *  Lumetri Color Look-preset (Cinespace 2383sRGB6bit) och Highlight Tint
- *  (Light Blue/Cyan) sätts manuellt i Effect Controls – kan ej sättas via script.
+ *  Lumetri Color: Look sätts via script (ADBE Lumetri-0025, val=5 = Cinespace 2383sRGB6bit,
+ *  bekräftat via debug). Highlight Tint (ADBE Lumetri-0035) är ej åtkomlig via scripting-API:t
+ *  (.value kastar exception) – sätts manuellt i Effect Controls.
  *
  *  Effektparameter-namn är engelska display names och kan misslyckas på
  *  icke-engelska AE-installationer.
@@ -423,7 +424,8 @@
     // GLOW: Threshold 50%, Radius 500, Intensity 0.2,
     //       Operation Screen (1-indexerat=6: none=1,normal=2,add=3,multiply=4,dissolve=5,screen=6)
     // CHANNEL MIXER: Blue-Green 50, Blue-Blue 50
-    // LUMETRI COLOR: Look + Highlight Tint sätts manuellt i Effect Controls
+    // LUMETRI COLOR: Look=5 (Cinespace 2383sRGB6bit) sätts via script.
+    //   Highlight Tint (ADBE Lumetri-0035) ej åtkomlig via script – sätts manuellt.
     // CC VIGNETTE: Amount 50
     // LEVELS: Output Black 2500, Output White 30000 (16-bpc-värden)
     function createColorCorrection(comp) {
@@ -445,9 +447,12 @@
             sp(cm, "Blue-Blue", 50);
         }
 
-        // Look: Cinespace 2383sRGB6bit, Highlight Tint: Light Blue/Cyan
-        // Sätts manuellt i Effect Controls – kan ej tillämpas via script.
-        addFX(l, "ADBE Lumetri", "Lumetri Color");
+        // Look: Cinespace 2383sRGB6bit = val 5 (bekräftat via debug, ADBE Lumetri-0025).
+        // Highlight Tint (ADBE Lumetri-0035): ej åtkomlig via script – sätts manuellt.
+        var lc = addFX(l, "ADBE Lumetri", "Lumetri Color");
+        if (lc) {
+            try { lc.property("ADBE Lumetri-0025").setValue(5); } catch(e) {}
+        }
 
         var vfx = addFX(l, "CC Vignette", "CC Vignette");
         sp(vfx, "Amount", 50);
