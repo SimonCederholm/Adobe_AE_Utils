@@ -1,6 +1,6 @@
 /**
  * @name        Font Swapper
- * @category    scripts
+ * @category    text
  * @type        script
  * @description Scans the active comp or all comps for used fonts (Font A),
  *              lets you pick a replacement font (Font B) from installed fonts
@@ -9,10 +9,6 @@
  *              Select scope, scan for fonts, pick Font A and Font B, click Swap.
  * @ae-version  2026
  */
-
-// FontSwapper.jsx
-// Scans active comp / all comps for used fonts (Font A),
-// pick Font B from installed fonts or type manually, then swaps.
 
 (function fontSwapper(thisObj) {
 
