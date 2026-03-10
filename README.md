@@ -22,9 +22,11 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 
 ### Text (`text/`)
 
-> Expressions for text animation and manipulation.
+> Expressions and scripts for text animation and manipulation.
 
-*No expressions yet.*
+| File | Description |
+|------|-------------|
+| `font_swapper.jsx` | ScriptUI panel that scans the active comp or all comps for used fonts, lets you pick a replacement font from installed fonts or type a PostScript name manually, then swaps all occurrences. Install under `Scripts/ScriptUI Panels/`. |
 
 ---
 

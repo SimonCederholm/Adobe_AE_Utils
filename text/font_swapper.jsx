@@ -1,6 +1,6 @@
 /**
  * @name        Font Swapper
- * @category    scripts
+ * @category    text
  * @type        script
  * @description Scans the active comp or all comps for used fonts (Font A),
  *              lets you pick a replacement font (Font B) from installed fonts
@@ -9,10 +9,6 @@
  *              Select scope, scan for fonts, pick Font A and Font B, click Swap.
  * @ae-version  2026
  */
-
-// FontSwapper.jsx
-// Scans active comp / all comps for used fonts (Font A),
-// pick Font B from installed fonts or type manually, then swaps.
 
 (function fontSwapper(thisObj) {
 
@@ -33,7 +29,7 @@
             for (i = 1; i <= layers.length; i++) {
                 layer = layers[i];
                 if (layer instanceof TextLayer) {
-                    td = layer.property("Source Text");
+                    td = layer.property("ADBE Text Document");
                     if (td.numKeys > 0) {
                         for (k = 1; k <= td.numKeys; k++) {
                             t = td.keyTime(k);
@@ -65,7 +61,7 @@
             for (i = 1; i <= layers.length; i++) {
                 layer = layers[i];
                 if (layer instanceof TextLayer) {
-                    td = layer.property("Source Text");
+                    td = layer.property("ADBE Text Document");
                     if (td.numKeys > 0) {
                         for (k = 1; k <= td.numKeys; k++) {
                             t = td.keyTime(k);
@@ -97,13 +93,10 @@
         var result = [];
         try {
             var all = app.fonts.allFonts;
-            var i, j, parts;
+            var i, name;
             for (i = 0; i < all.length; i++) {
-                parts = all[i].toString().split(",");
-                for (j = 0; j < parts.length; j++) {
-                    var name = parts[j].replace(/^\s+|\s+$/g, "");
-                    if (name !== "") { result.push(name); }
-                }
+                name = all[i].postScriptName;
+                if (name && name !== "") { result.push(name); }
             }
             result.sort();
         } catch(e) {}
