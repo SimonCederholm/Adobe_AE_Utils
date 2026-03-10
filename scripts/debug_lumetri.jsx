@@ -36,7 +36,7 @@
         } catch(e) { return "–"; }
     }
 
-    function dumpGroup(prop, indent) {
+    function dumpGroup(prop, indent, maxDepth) {
         var out = "";
         var n = 0;
         try { n = prop.numProperties; } catch(e) { return out; }
@@ -51,17 +51,30 @@
             if (!hasChildren) out += "  val=" + readVal(p);
             out += "\n";
 
-            if (hasChildren && indent.length < 12) {
-                out += dumpGroup(p, indent + "    ");
+            if (hasChildren && maxDepth > 0) {
+                out += dumpGroup(p, indent + "    ", maxDepth - 1);
             }
         }
         return out;
     }
 
-    var out = "=== LUMETRI COLOR – property-träd ===\n";
-    out += "Effekt: \"" + fx.name + "\"  matchName=" + fx.matchName + "\n";
-    out += "numProperties: " + fx.numProperties + "\n\n";
-    out += dumpGroup(fx, "  ");
+    // Hitta Creative-subgruppen (ADBE Lumetri-0022) och dumpa den fullt ut
+    var creative = null;
+    for (var i = 1; i <= fx.numProperties; i++) {
+        try {
+            if (fx.property(i).matchName === "ADBE Lumetri-0022") {
+                creative = fx.property(i); break;
+            }
+        } catch(e) {}
+    }
+
+    var out = "=== LUMETRI COLOR – Creative-sektion (full dump) ===\n\n";
+    if (creative) {
+        out += "Creative  mn=" + creative.matchName + "\n";
+        out += dumpGroup(creative, "  ", 5);
+    } else {
+        out += "(Creative-gruppen hittades inte)\n";
+    }
 
     // Dela upp i två alerts om texten är lång
     if (out.length > 2000) {
