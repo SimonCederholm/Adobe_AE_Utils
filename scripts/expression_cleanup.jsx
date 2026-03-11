@@ -5,7 +5,7 @@
  * @description Städar expressions i hela projektet som refererar till kontrollager via thisComp.
  *              Ersätter thisComp med comp("BRAND_CTRL") i expressions som refererar till
  *              "Text adjustments", "Color picker Splash", "Animation controller" eller "Color picker".
- *              Byter också namn: "Text adjustments" → "Text Controller",
+ *              Byter också namn: "Text adjustments" → "Text controller",
  *              "Color picker" → "Color controller" (inkl. "Color picker Splash").
  *              Körs på alla kompositioner i projektet.
  * @usage       Kopiera till Scripts/ och kör via File > Scripts > Run Script File i AE.
@@ -16,7 +16,7 @@
 // OBS: "Color picker Splash" måste stå före "Color picker" för att undvika delmatchning.
 var LAYER_MAP = [
     { from: "Color picker Splash", to: "Color controller Splash" },
-    { from: "Text adjustments",    to: "Text Controller" },
+    { from: "Text adjustments",    to: "Text controller" },
     { from: "Animation controller", to: "Animation controller" },
     { from: "Color picker",        to: "Color controller" }
 ];
