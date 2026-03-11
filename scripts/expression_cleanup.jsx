@@ -12,42 +12,33 @@
  * @ae-version  2026
  */
 
-// Expressions som innehåller thisComp + ett av dessa lagernamn träffas och transformeras
-var TARGET_LAYERS = [
-    "Text adjustments",
-    "Color picker Splash",
-    "Animation controller",
-    "Color picker"
-];
-
-// Textersättningar som görs i alla träffade expressions
-var RENAMES = [
-    { from: "Text adjustments", to: "Text Controller" },
-    { from: "Color picker",     to: "Color controller" }
-    // "Color picker Splash" → "Color controller Splash" hanteras automatiskt
-    // eftersom "Color picker" är en delsträng av "Color picker Splash"
+// Exakta mönster som matchas: thisComp.layer("FROM") → comp("BRAND_CTRL").layer("TO")
+// OBS: "Color picker Splash" måste stå före "Color picker" för att undvika delmatchning.
+var LAYER_MAP = [
+    { from: "Color picker Splash", to: "Color controller Splash" },
+    { from: "Text adjustments",    to: "Text Controller" },
+    { from: "Animation controller", to: "Animation controller" },
+    { from: "Color picker",        to: "Color controller" }
 ];
 
 // ── Hjälpfunktioner ───────────────────────────────────────────────────────────
 
-function replaceAll(str, search, replacement) {
-    return str.split(search).join(replacement);
-}
-
-// Kontrollerar om en expression refererar till thisComp + ett av kontrollager-namnen
+// Kontrollerar om en expression innehåller något av mönstren thisComp.layer("TARGET")
 function containsTargetRef(expr) {
-    if (expr.indexOf("thisComp") === -1) return false;
-    for (var i = 0; i < TARGET_LAYERS.length; i++) {
-        if (expr.indexOf(TARGET_LAYERS[i]) !== -1) return true;
+    for (var i = 0; i < LAYER_MAP.length; i++) {
+        if (expr.indexOf('thisComp.layer("' + LAYER_MAP[i].from + '")') !== -1) return true;
     }
     return false;
 }
 
-// Utför alla ersättningar på en expression-sträng
+// Ersätter exakt thisComp.layer("FROM") → comp("BRAND_CTRL").layer("TO")
+// Övriga thisComp-referenser i samma expression lämnas orörda.
 function transformExpr(expr) {
-    var result = replaceAll(expr, "thisComp", 'comp("BRAND_CTRL")');
-    for (var i = 0; i < RENAMES.length; i++) {
-        result = replaceAll(result, RENAMES[i].from, RENAMES[i].to);
+    var result = expr;
+    for (var i = 0; i < LAYER_MAP.length; i++) {
+        var search  = 'thisComp.layer("' + LAYER_MAP[i].from + '")';
+        var replace = 'comp("BRAND_CTRL").layer("' + LAYER_MAP[i].to + '")';
+        result = result.split(search).join(replace);
     }
     return result;
 }
