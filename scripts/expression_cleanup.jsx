@@ -2,11 +2,12 @@
  * @name        Expression Cleanup – BRAND_CTRL
  * @category    scripts
  * @type        script
- * @description Städar expressions som refererar till kontrollager via thisComp.
+ * @description Städar expressions i hela projektet som refererar till kontrollager via thisComp.
  *              Ersätter thisComp med comp("BRAND_CTRL") i expressions som refererar till
  *              "Text adjustments", "Color picker Splash", "Animation controller" eller "Color picker".
  *              Byter också namn: "Text adjustments" → "Text Controller",
  *              "Color picker" → "Color controller" (inkl. "Color picker Splash").
+ *              Körs på alla kompositioner i projektet.
  * @usage       Kopiera till Scripts/ och kör via File > Scripts > Run Script File i AE.
  * @ae-version  2026
  */
@@ -77,17 +78,21 @@ function scanProp(prop, pathParts, changes) {
     } catch (e) {}
 }
 
-// ── Kör städningen ────────────────────────────────────────────────────────────
+// ── Kör städningen på hela projektet ─────────────────────────────────────────
 
-var comp = app.project.activeItem;
-if (!comp || !(comp instanceof CompItem)) {
-    alert("Ingen aktiv komposition hittades.\nAktivera en komposition och kör scriptet igen.");
-} else {
-    var changes = [];
-    app.beginUndoGroup("Expression Cleanup \u2013 BRAND_CTRL");
-    try {
-        for (var i = 1; i <= comp.numLayers; i++) {
-            var layer = comp.layer(i);
+var totalChanges = 0;
+var compsHit = 0;
+var report = [];
+
+app.beginUndoGroup("Expression Cleanup \u2013 BRAND_CTRL");
+try {
+    for (var p = 1; p <= app.project.numItems; p++) {
+        var item = app.project.item(p);
+        if (!(item instanceof CompItem)) continue;
+
+        var changes = [];
+        for (var i = 1; i <= item.numLayers; i++) {
+            var layer = item.layer(i);
             var count = 0;
             try { count = layer.numProperties; } catch (e) {}
             for (var j = 1; j <= count; j++) {
@@ -96,17 +101,27 @@ if (!comp || !(comp instanceof CompItem)) {
                 } catch (e) {}
             }
         }
-    } finally {
-        app.endUndoGroup();
-    }
 
-    if (changes.length === 0) {
-        alert("Inga matchande expressions hittades i \"" + comp.name + "\".");
-    } else {
-        var msg = "Uppdaterade " + changes.length + " expression" +
-                  (changes.length > 1 ? "s" : "") +
-                  " i \"" + comp.name + "\":\n\n" +
-                  changes.join("\n");
-        alert(msg);
+        if (changes.length > 0) {
+            totalChanges += changes.length;
+            compsHit++;
+            report.push("── " + item.name + " ──");
+            for (var k = 0; k < changes.length; k++) {
+                report.push(changes[k]);
+            }
+        }
     }
+} finally {
+    app.endUndoGroup();
+}
+
+if (totalChanges === 0) {
+    alert("Inga matchande expressions hittades i projektet.");
+} else {
+    var msg = "Uppdaterade " + totalChanges + " expression" +
+              (totalChanges > 1 ? "s" : "") +
+              " i " + compsHit + " komposition" +
+              (compsHit > 1 ? "er" : "") + ":\n\n" +
+              report.join("\n");
+    alert(msg);
 }
