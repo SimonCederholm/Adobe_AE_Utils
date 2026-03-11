@@ -53,6 +53,7 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 | File | Description |
 |------|-------------|
 | `film_damage_suite.jsx` | ScriptUI panel that creates a full film damage simulation stack in the active composition. Adds nine individually togglable layers: Gate Weave, Grain, Scratches, Blobs, Damage, Dust, Flicker, Color Correction, and Light Leaks – each built from native AE effects and expressions. Install under `Scripts/ScriptUI Panels/` and open via the Window menu. |
+| `expression_cleanup.jsx` | ScriptUI panel that cleans up expressions referencing control layers via `thisComp`. Replaces `thisComp` with `comp("BRAND_CTRL")` in any expression that references "Text adjustments", "Color picker Splash", "Animation controller", or "Color picker". Also renames "Text adjustments" → "Text Controller" and "Color picker" → "Color controller" (incl. "Color picker Splash"). Install under `Scripts/ScriptUI Panels/` and open via the Window menu. |
 
 ---
 
