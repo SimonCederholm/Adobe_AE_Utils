@@ -34,7 +34,9 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 
 > Expressions for color manipulation and effects.
 
-*No expressions yet.*
+| File | Description |
+|------|-------------|
+| `contrast_colorcheck.jsx` | Samples a background layer ("Bakgrund") at the current layer's center, calculates relative luminance (ITU-R BT.709), and returns black or white for maximum readability. Apply to a Fill effect's Color property or a text layer's color. |
 
 ---
 
