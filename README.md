@@ -37,6 +37,7 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 | File | Description |
 |------|-------------|
 | `contrast_colorcheck.jsx` | Samples a background layer ("Bakgrund") at the current layer's center, calculates relative luminance (ITU-R BT.709), and returns black or white for maximum readability. Apply to a Fill effect's Color property or a text layer's color. |
+| `contrast_colorcheck_fx.jsx` | Variant of contrast_colorcheck that reads color directly from the "Background color splash" effect on a layer named "Color controller splash" instead of sampling a layer. Calculates relative luminance (ITU-R BT.709) and returns black or white for maximum readability. Apply to a Fill effect's Color property or a text layer's color. |
 
 ---
 
