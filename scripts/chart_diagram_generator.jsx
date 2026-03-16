@@ -157,10 +157,10 @@
         }
 
         var f = new File(fsPath);
-        f.encoding = "UTF-8";
         if (!f.open("r")) {
             throw new Error("Kan inte öppna filen: " + fsPath);
         }
+        f.encoding = "UTF-8"; // Måste sättas EFTER open() i ExtendScript
         var content = f.read();
         f.close();
 
@@ -173,21 +173,20 @@
         }
 
         // Om filen saknar yttre { } (börjar direkt med "nyckel":) – lägg till dem
-        if (content.charAt(0) === '"' || content.charAt(0) === "'") {
+        if (content.charAt(0) !== "{" && content.charAt(0) !== "[") {
             content = "{" + content + "}";
         }
 
+        // Ta bort trailing commas (vanligt i handskrivna JSON-filer) – ej giltigt i ES3 eval
+        content = content.replace(/,(\s*[}\]])/g, "$1");
+
         var raw;
         try {
-            // Försök med JSON.parse om det finns (AE CC+), annars eval
-            if (typeof JSON !== "undefined" && JSON.parse) {
-                raw = JSON.parse(content);
-            } else {
-                raw = eval("(" + content + ")"); // eslint-disable-line no-eval
-            }
+            // ScriptUI-paneler kör i ExtendScript (ES3) – JSON.parse finns inte, använd eval
+            raw = eval("(" + content + ")"); // eslint-disable-line no-eval
         } catch (e) {
-            var preview = content.substring(0, 80).replace(/[\r\n]/g, " ");
-            throw new Error("Ogiltig JSON (längd: " + content.length + ", start: \"" + preview + "\"): " + e.message);
+            var preview = content.substring(0, 120).replace(/[\r\n]/g, " ");
+            throw new Error("Ogiltig JSON: " + e.message + "\nStart: " + preview);
         }
 
         // Hitta alla serie-nycklar på toppnivå
