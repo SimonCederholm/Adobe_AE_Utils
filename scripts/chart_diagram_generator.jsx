@@ -172,6 +172,11 @@
             throw new Error("Filen är tom eller kunde inte läsas.");
         }
 
+        // Om filen saknar yttre { } (börjar direkt med "nyckel":) – lägg till dem
+        if (content.charAt(0) === '"' || content.charAt(0) === "'") {
+            content = "{" + content + "}";
+        }
+
         var raw;
         try {
             // Försök med JSON.parse om det finns (AE CC+), annars eval
