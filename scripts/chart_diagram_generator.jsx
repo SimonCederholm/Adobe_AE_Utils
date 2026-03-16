@@ -145,19 +145,41 @@
 
     // Läser och parsar JSON-footage; returnerar ett config-objekt med alla beräknade gränser
     function parseChartData(footageItem) {
-        var f = footageItem.mainSource.file;
+        // Hämta filsökväg via fsName och skapa ett nytt File-objekt för att undvika caching
+        var fsPath;
+        try {
+            fsPath = footageItem.mainSource.file.fsName;
+        } catch (e) {
+            throw new Error("Kan inte komma åt filkällan. Är footage-objektet giltigt?");
+        }
+
+        var f = new File(fsPath);
         f.encoding = "UTF-8";
         if (!f.open("r")) {
-            throw new Error("Kan inte öppna filen: " + f.fsName);
+            throw new Error("Kan inte öppna filen: " + fsPath);
         }
         var content = f.read();
         f.close();
 
+        // Strippa UTF-8 BOM (\uFEFF) och omgivande whitespace
+        content = content.replace(/^\uFEFF/, "");
+        content = content.replace(/^\s+|\s+$/g, "");
+
+        if (content.length === 0) {
+            throw new Error("Filen är tom eller kunde inte läsas.");
+        }
+
         var raw;
         try {
-            raw = eval("(" + content + ")"); // eslint-disable-line no-eval
+            // Försök med JSON.parse om det finns (AE CC+), annars eval
+            if (typeof JSON !== "undefined" && JSON.parse) {
+                raw = JSON.parse(content);
+            } else {
+                raw = eval("(" + content + ")"); // eslint-disable-line no-eval
+            }
         } catch (e) {
-            throw new Error("Ogiltig JSON: " + e.message);
+            var preview = content.substring(0, 80).replace(/[\r\n]/g, " ");
+            throw new Error("Ogiltig JSON (längd: " + content.length + ", start: \"" + preview + "\"): " + e.message);
         }
 
         // Hitta alla serie-nycklar på toppnivå
