@@ -55,9 +55,12 @@
     }
 
     // Avrundar rawMax uppåt till ett "snyggt" tal (1, 2, 5, 10 × 10^n)
+    // Använder loop istället för Math.log för att undvika floating-point-fel
+    // (t.ex. Math.log(1000)/Math.LN10 = 2.9999... → Math.floor ger 2 istället för 3)
     function niceMax(rawMax) {
         if (rawMax <= 0) { return 1; }
-        var mag  = Math.pow(10, Math.floor(Math.log(rawMax) / Math.LN10));
+        var mag = 1;
+        while (rawMax >= mag * 10) { mag *= 10; }
         var norm = rawMax / mag;
         var nice;
         if (norm <= 1)      { nice = 1; }
@@ -145,19 +148,41 @@
 
     // Läser och parsar JSON-footage; returnerar ett config-objekt med alla beräknade gränser
     function parseChartData(footageItem) {
-        var f = footageItem.mainSource.file;
+        // Hämta filsökväg via fsName och skapa ett nytt File-objekt för att undvika caching
+        var fsPath;
+        try {
+            fsPath = footageItem.mainSource.file.fsName;
+        } catch (e) {
+            throw new Error("Kan inte komma åt filkällan. Är footage-objektet giltigt?");
+        }
+
+        var f = new File(fsPath);
         f.encoding = "UTF-8";
         if (!f.open("r")) {
-            throw new Error("Kan inte öppna filen: " + f.fsName);
+            throw new Error("Kan inte öppna filen: " + fsPath);
         }
         var content = f.read();
         f.close();
 
+        // Strippa UTF-8 BOM (\uFEFF) och omgivande whitespace
+        content = content.replace(/^\uFEFF/, "");
+        content = content.replace(/^\s+|\s+$/g, "");
+
+        if (content.length === 0) {
+            throw new Error("Filen är tom eller kunde inte läsas.");
+        }
+
         var raw;
         try {
-            raw = eval("(" + content + ")"); // eslint-disable-line no-eval
+            // Försök med JSON.parse om det finns (AE CC+), annars eval
+            if (typeof JSON !== "undefined" && JSON.parse) {
+                raw = JSON.parse(content);
+            } else {
+                raw = eval("(" + content + ")"); // eslint-disable-line no-eval
+            }
         } catch (e) {
-            throw new Error("Ogiltig JSON: " + e.message);
+            var preview = content.substring(0, 80).replace(/[\r\n]/g, " ");
+            throw new Error("Ogiltig JSON (längd: " + content.length + ", start: \"" + preview + "\"): " + e.message);
         }
 
         // Hitta alla serie-nycklar på toppnivå
@@ -224,7 +249,7 @@
 
     // Skapar null-lager "Color Controller" med en ADBE Color Control per serie
     function createControllerLayer(comp, seriesKeys) {
-        var nl = comp.layers.addNull(comp.duration);
+        var nl = comp.layers.addNull();
         nl.name    = CONTROLLER_NAME;
         nl.enabled = false;
 
@@ -246,7 +271,7 @@
     function createPointNulls(comp, sName, dataPoints, cfg) {
         for (var i = 0; i < dataPoints.length; i++) {
             var pos = dataToCompPos(dataPoints[i].year, dataPoints[i].value, cfg);
-            var nl  = comp.layers.addNull(comp.duration);
+            var nl  = comp.layers.addNull();
             nl.name = sName + "_pt" + i;
             nl.transform.anchorPoint.setValue([0, 0]);
             nl.transform.position.setValue(pos);
@@ -312,7 +337,9 @@
             stroke.property("ADBE Vector Stroke Color").setValue([initCol[0], initCol[1], initCol[2], 1]);
         } catch (e) {}
         // Länka linjefärgen till Color Controller
-        var colorExpr = 'thisComp.layer("' + CONTROLLER_NAME + '").effect("' + displayName + '")("Color");';
+        // Escapar citattecken i serienamnet så att expression-strängen alltid är giltig JS
+        var safeDisplay = displayName.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        var colorExpr = 'thisComp.layer("' + CONTROLLER_NAME + '").effect("' + safeDisplay + '")("Color");';
         try { stroke.property("ADBE Vector Stroke Color").expression = colorExpr; } catch (e) {}
 
         // Trim Paths med animerad End: 0% → 100% med ease-ease
@@ -333,7 +360,7 @@
 
     // Skapar ett dolt null-lager vars position följer slutpunkten för den animerade linjen
     function createTrackerNull(comp, sName) {
-        var nl = comp.layers.addNull(comp.duration);
+        var nl = comp.layers.addNull();
         nl.name    = "Tracker_" + sName;
         nl.enabled = false;
         nl.moveToEnd();
