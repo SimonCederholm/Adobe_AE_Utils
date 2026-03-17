@@ -271,14 +271,7 @@
         var ABOVE_LINE   = 12; // px ovanför strecket (baseline-offset)
         var col = [GRID_LINE_COLOR[0], GRID_LINE_COLOR[1], GRID_LINE_COLOR[2]];
 
-        // 0-etiketten på noll-linjen
-        var tl0 = comp.layers.addText("0");
-        tl0.name = "YLabel_0";
-        var tp0 = tl0.property("ADBE Text Properties").property("ADBE Text Document");
-        applyTextStyle(tp0, FONT_SIZE_Y, col, ParagraphJustification.LEFT_JUSTIFY);
-        tl0.transform.position.setValue([CHART_LEFT, CHART_BOTTOM - ABOVE_LINE]);
-
-        // En etikett per skallinje
+        // En etikett per skallinje (ingen etikett för 0-linjen)
         for (var i = 1; i <= GRID_DIVISIONS; i++) {
             var val  = cfg.yMax * (i / GRID_DIVISIONS);
             var yPos = dataToCompPos(cfg.xMin, val, cfg)[1];
