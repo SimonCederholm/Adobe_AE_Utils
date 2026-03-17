@@ -46,6 +46,8 @@
         [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250
     ];
     var BG_COLOR = [0.063, 0.247, 0.455]; // Navy #103f74  RGB 16/63/116
+    // Aktivt teckensnitt — uppdateras av UI-fontväljaren
+    var selectedFont = FONT_NAME;
     // =========================================================================
     // HELPERS
     // =========================================================================
@@ -102,7 +104,7 @@
     function applyTextStyle(textProp, fontSize, fillColor, justify) {
         try {
             var td = textProp.value;
-            td.font        = FONT_NAME;
+            td.font        = selectedFont;
             td.fontSize    = fontSize;
             td.fillColor   = fillColor;
             td.applyFill   = true;
@@ -521,6 +523,24 @@
     // =========================================================================
     // UI
     // =========================================================================
+
+    // Hämtar alla installerade teckensnitt via app.fonts.allFonts (samma metod som font_swapper)
+    function loadInstalledFonts() {
+        var result = [];
+        try {
+            var all = app.fonts.allFonts;
+            for (var i = 0; i < all.length; i++) {
+                var parts = all[i].toString().split(",");
+                for (var j = 0; j < parts.length; j++) {
+                    var name = parts[j].replace(/^\s+|\s+$/g, "");
+                    if (name !== "") { result.push(name); }
+                }
+            }
+            result.sort();
+        } catch (e) {}
+        return result;
+    }
+
     var jsonItems = [];
     function refreshDropdown(dd) {
         dd.removeAll();
@@ -553,6 +573,50 @@
         dd.alignment = ["fill", "center"];
         var refBtn = row.add("button", undefined, "\u21ba");
         refBtn.maximumSize = [28, 22];
+
+        // Teckensnittsväljare
+        var fontRow = w.add("group");
+        fontRow.orientation   = "row";
+        fontRow.alignChildren = ["fill", "center"];
+        var fontLbl = fontRow.add("statictext", undefined, "Font:");
+        fontLbl.minimumSize = [38, -1];
+        var fontFilter = fontRow.add("edittext", undefined, "");
+        fontFilter.alignment = ["fill", "center"];
+        fontFilter.helpTip   = "Filtrera teckensnitt";
+
+        var fontList = w.add("listbox", [0, 0, 0, 90], [], { multiselect: false });
+        fontList.alignment = ["fill", "top"];
+
+        var installedFonts = loadInstalledFonts();
+
+        function populateFontList(filter) {
+            fontList.removeAll();
+            filter = (filter || "").replace(/^\s+|\s+$/g, "").toLowerCase();
+            for (var i = 0; i < installedFonts.length; i++) {
+                var name = installedFonts[i];
+                if (filter === "" || name.toLowerCase().indexOf(filter) !== -1) {
+                    var item = fontList.add("item", name.length > 36 ? name.substring(0, 33) + "..." : name);
+                    item.fullName = name;
+                    // Markera om det matchar nuvarande val
+                    if (name === selectedFont) { fontList.selection = fontList.items.length - 1; }
+                }
+            }
+            if (installedFonts.length === 0) {
+                fontList.add("item", "(inga teckensnitt hittades)");
+            }
+        }
+
+        fontFilter.onChanging = function () { populateFontList(fontFilter.text); };
+
+        fontList.onChange = function () {
+            if (fontList.selection) {
+                var picked = fontList.selection.fullName || fontList.selection.text;
+                if (picked.charAt(0) !== "(") { selectedFont = picked; }
+            }
+        };
+
+        populateFontList();
+
         var createBtn = w.add("button", undefined, "Skapa diagram");
         createBtn.alignment = ["fill", "top"];
         w.add("panel", undefined, "").alignment = ["fill", "top"];
