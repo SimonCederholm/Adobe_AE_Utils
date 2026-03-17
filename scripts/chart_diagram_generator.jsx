@@ -17,9 +17,9 @@
     var CHART_RIGHT           = 1300;   // px, höger kant av diagramytan
     var CHART_TOP             = 200;    // px, övre kant (höga värden)
     var CHART_BOTTOM          = 1200;   // px, nedre kant (låga värden)
-    var FRAMES_PER_SEGMENT    = 5;      // frames per segment (datapunkt till datapunkt)
+    var COMP_DURATION_SEC     = 10;     // kompens totala längd (alltid fast)
+    var ANIM_DURATION_SEC     = 4;      // trim-path-animationen tar alltid 4 sekunder
     var ANIM_START_FRAME      = 24;     // frame där trim-path-animeringen börjar
-    var ANIM_TAIL_FRAMES      = 48;     // extra frames efter att animationen är klar
     var LABEL_OFFSET_Y        = 50;     // px ovanför datapunkt för dolda datalabels
     var RUNNING_OFFSET_Y      = 60;     // px ovanför tracker-null för running label
     var FONT_NAME             = "IBMPlexSans-Medium";
@@ -34,14 +34,14 @@
     var GRID_SCALE_WIDTH      = 2;    // px, tunna skallinjer
     var GRID_DIVISIONS        = 4;    // antal skallinjer ovanför 0
     var GRID_LINE_COLOR       = [0.894, 0.953, 0.980]; // Ljusblå RGB 228/243/250
-    // Färgpalett per serie — LF brand colors
+    // Färgpalett per serie — turkos och rosa i första hand
     var COLOR_PALETTE = [
+        [0.000, 0.796, 0.784],  // Turkos     RGB 0/203/200
+        [0.957, 0.294, 0.580],  // Rosa       RGB 244/75/148
         [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160
         [1.000, 1.000, 1.000],  // Vit        RGB 255/255/255
         [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19
         [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100
-        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92
-        [0.714, 0.882, 0.969],  // Turkos     RGB 182/225/247
         [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223
         [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250
     ];
@@ -283,6 +283,7 @@
         var nl = comp.layers.addNull();
         nl.name    = CONTROLLER_NAME;
         nl.enabled = false;
+        nl.shy     = true;
         var fx = addFX(nl, "ADBE Color Control", "Color Control");
         if (fx) {
             fx.name = sKey;
@@ -304,6 +305,7 @@
             nl.transform.anchorPoint.setValue([0, 0]);
             nl.transform.position.setValue(pos);
             nl.enabled = false;
+            nl.shy     = true;
             nl.moveToEnd();
             layers.push(nl);
         }
@@ -361,7 +363,7 @@
         var trim = grpVec.addProperty("ADBE Vector Filter - Trim");
         trim.name = "Trim Paths 1";
         var startSec    = ANIM_START_FRAME / COMP_FPS;
-        var endSec      = (ANIM_START_FRAME + (numPts - 1) * FRAMES_PER_SEGMENT) / COMP_FPS;
+        var endSec      = (ANIM_START_FRAME + (numPts - 1) * cfg.framesPerSegment) / COMP_FPS;
         var trimEndProp = trim.property("ADBE Vector Trim End");
         try {
             trimEndProp.setValueAtTime(startSec, 0);
@@ -376,6 +378,7 @@
         var nl = comp.layers.addNull();
         nl.name    = "Tracker_" + sName;
         nl.enabled = false;
+        nl.shy     = true;
         nl.moveToEnd();
         var expr =
             'var sl=thisComp.layer("Line_' + sName + '");\n' +
@@ -418,6 +421,7 @@
             var tl = comp.layers.addText(formatValue(pt.value));
             tl.name    = "Label_" + sName + "_" + pt.year;
             tl.enabled = false;
+            tl.shy     = true;
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
             applyTextStyle(textProp, FONT_SIZE_LABEL, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
             var posExpr =
@@ -442,7 +446,7 @@
             tl.name = "XLabel_" + yr;
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
             applyTextStyle(textProp, FONT_SIZE_LABEL, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
-            tl.transform.position.setValue([xPx, CHART_BOTTOM + FONT_SIZE_LABEL]);
+            tl.transform.position.setValue([xPx, CHART_BOTTOM + FONT_SIZE_LABEL + 20]);
         }
     }
     // Skapar alla lager för en serie och pre-kompar dem
@@ -472,9 +476,15 @@
             if (allLayers[k]) { indices.push(allLayers[k].index); }
         }
         indices.sort(function (a, b) { return a - b; });
+        var precompLayer = null;
         try {
-            comp.layers.precompose(indices, "Serie_" + sName, true);
+            precompLayer = comp.layers.precompose(indices, "Serie_" + sName, true);
+            // Aktivera shy-filter inuti pre-compen
+            if (precompLayer && precompLayer.source) {
+                try { precompLayer.source.hideShyLayers = true; } catch (e2) {}
+            }
         } catch (e) {}
+        return precompLayer;
     }
     // Huvudfunktion: läser data och skapar hela kompositionen
     function createChart(footageItem, statusEl) {
@@ -486,7 +496,11 @@
             var n = cfg.seriesMap[cfg.seriesKeys[si]].length;
             if (n > maxPts) { maxPts = n; }
         }
-        var totalFrames  = ANIM_START_FRAME + (maxPts - 1) * FRAMES_PER_SEGMENT + ANIM_TAIL_FRAMES;
+        var animFrames = ANIM_DURATION_SEC * COMP_FPS;   // 4 * 24 = 96 frames
+        cfg.framesPerSegment = (maxPts > 1)
+            ? Math.max(1, Math.floor(animFrames / (maxPts - 1)))
+            : animFrames;
+        var totalFrames = COMP_DURATION_SEC * COMP_FPS;  // alltid 240 frames / 10 s
         var fname        = footageItem.mainSource.file.name;
         var compName     = fname.replace(/\.json$/i, "");
         setStatus("Skapar komposition\u2026", statusEl);
@@ -497,16 +511,29 @@
                 compName, COMP_WIDTH, COMP_HEIGHT, 1,
                 totalFrames / COMP_FPS, COMP_FPS
             );
+            // Skapar i omvänd stapelordning: sist tillagt hamnar överst.
+            // Önskad ordning (topp → botten): Serier > X-labels > Grid > Background.
+            createBackground(comp);
+            createGridLines(comp, cfg);
+            createXAxisLabels(comp, cfg);
+            var precompLayers = [];
             for (var si2 = 0; si2 < cfg.seriesKeys.length; si2++) {
                 setStatus(
                     "Skapar serie " + (si2 + 1) + " / " + cfg.seriesKeys.length + "\u2026",
                     statusEl
                 );
-                createSeriesLayers(comp, si2, cfg.seriesKeys[si2], cfg);
+                var pcLayer = createSeriesLayers(comp, si2, cfg.seriesKeys[si2], cfg);
+                if (pcLayer) { precompLayers.push(pcLayer); }
             }
-            createXAxisLabels(comp, cfg);
-            createGridLines(comp, cfg);
-            createBackground(comp);
+            // Samla alla serie-pre-compar i en mapp i projektet
+            if (precompLayers.length > 0) {
+                try {
+                    var folder = app.project.items.addFolder("Serie Pre-comps – " + compName);
+                    for (var pci = 0; pci < precompLayers.length; pci++) {
+                        try { precompLayers[pci].source.parentFolder = folder; } catch (e2) {}
+                    }
+                } catch (e3) {}
+            }
         } catch (e) {
             app.endUndoGroup();
             throw e;
