@@ -34,16 +34,16 @@
     var GRID_SCALE_WIDTH      = 2;    // px, tunna skallinjer
     var GRID_DIVISIONS        = 4;    // antal skallinjer ovanför 0
     var GRID_LINE_COLOR       = [0.894, 0.953, 0.980]; // Ljusblå RGB 228/243/250
-    // Färgpalett per serie — turkos och rosa i första hand
+    // Färgpalett per serie — peach och turkos i första hand, endast brand-färger
     var COLOR_PALETTE = [
-        [0.000, 0.796, 0.784],  // Turkos     RGB 0/203/200
-        [0.957, 0.294, 0.580],  // Rosa       RGB 244/75/148
-        [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160
-        [1.000, 1.000, 1.000],  // Vit        RGB 255/255/255
-        [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19
-        [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100
-        [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223
-        [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250
+        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92    #eb5c5c
+        [0.714, 0.882, 0.969],  // Turkos     RGB 182/225/247  #b6e1f7
+        [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160     #005aa0
+        [1.000, 1.000, 1.000],  // Vit        RGB 255/255/255  #ffffff
+        [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19     #e30613
+        [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100  #6da964
+        [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223  #e2efdf
+        [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250  #e4f3fa
     ];
     var BG_COLOR = [0.063, 0.247, 0.455]; // Navy #103f74  RGB 16/63/116
     // Aktivt teckensnitt — uppdateras av UI-fontväljaren
@@ -368,8 +368,15 @@
         try {
             trimEndProp.setValueAtTime(startSec, 0);
             trimEndProp.setValueAtTime(endSec, 100);
-            setEaseEase(trimEndProp, 1);
-            setEaseEase(trimEndProp, 2);
+            // Spike-ease expression (tanh-baserad, samma formel som spike_ease_2d.jsx, sharpness 8)
+            var spikeExpr =
+                'var startT=' + startSec.toFixed(4) + ';\n' +
+                'var endT='   + endSec.toFixed(4)   + ';\n' +
+                'var sh=8;\n' +
+                'var t=clamp((time-startT)/(endT-startT),0,1);\n' +
+                'var h=Math.tanh(sh*0.5);\n' +
+                'linear((Math.tanh(sh*(t-0.5))+h)/(2*h),0,1,0,100);';
+            trimEndProp.expression = spikeExpr;
         } catch (e) {}
         return sl;
     }
