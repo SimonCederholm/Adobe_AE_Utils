@@ -30,17 +30,21 @@
     var COMP_HEIGHT           = 1440;
     var COMP_FPS              = 24;
     var CONTROLLER_NAME       = "Color Controller";
-    // Färgpalett per serie — index 0 = första serien, etc.
+    var GRID_ZERO_WIDTH       = 2;    // px, noll-linjens tjocklek
+    var GRID_SCALE_WIDTH      = 1;    // px, tunna skallinjer
+    var GRID_DIVISIONS        = 4;    // antal skallinjer ovanför 0
+    // Färgpalett per serie — LF brand colors
     var COLOR_PALETTE = [
-        [1.00, 1.00, 1.00],   // vit
-        [0.96, 0.36, 0.36],   // korallröd
-        [1.00, 0.87, 0.20],   // gul
-        [0.40, 0.80, 1.00],   // ljusblå
-        [0.60, 0.90, 0.40],   // grön
-        [0.90, 0.50, 1.00],   // lila
-        [1.00, 0.65, 0.20],   // orange
-        [0.40, 0.90, 0.80]    // turkos
+        [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160
+        [1.000, 1.000, 1.000],  // Vit        RGB 255/255/255
+        [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19
+        [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100
+        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92
+        [0.714, 0.882, 0.969],  // Turkos     RGB 182/225/247
+        [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223
+        [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250
     ];
+    var BG_COLOR = [0.063, 0.247, 0.455]; // Navy #103f74  RGB 16/63/116
     // =========================================================================
     // HELPERS
     // =========================================================================
@@ -218,16 +222,64 @@
     // =========================================================================
     // LAYER CREATION
     // =========================================================================
-    // Skapar null-lager "Color Controller" med en ADBE Color Control per serie
-    function createControllerLayer(comp, seriesKeys) {
+
+    // Skapar ett Navy-solid som bakgrundslager (hamnar längst ner)
+    function createBackground(comp) {
+        var solid = comp.layers.addSolid(BG_COLOR, "Bakgrund", COMP_WIDTH, COMP_HEIGHT, 1);
+        solid.moveToEnd();
+        return solid;
+    }
+
+    // Lägger till en horisontell linje som en Vector Group i ett shape-lagers rot
+    function addHLineToRoot(root, name, x1, x2, y, strokeWidth, r, g, b, a) {
+        var grp    = root.addProperty("ADBE Vector Group");
+        grp.name   = name;
+        var grpVec = grp.property("ADBE Vectors Group");
+        var pathGrp  = grpVec.addProperty("ADBE Vector Shape - Group");
+        var pathProp = pathGrp.property("ADBE Vector Shape");
+        try {
+            var sh = new Shape();
+            sh.vertices    = [[x1, y], [x2, y]];
+            sh.inTangents  = [[0, 0], [0, 0]];
+            sh.outTangents = [[0, 0], [0, 0]];
+            sh.closed = false;
+            pathProp.setValue(sh);
+        } catch (e) {}
+        var stroke = grpVec.addProperty("ADBE Vector Graphic - Stroke");
+        try { stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth); } catch (e) {}
+        try { stroke.property("ADBE Vector Stroke Color").setValue([r, g, b, a]); } catch (e) {}
+    }
+
+    // Skapar ett shapelager med noll-linje och GRID_DIVISIONS tunna skallinjer
+    function createGridLines(comp, cfg) {
+        var sl = comp.layers.addShape();
+        sl.name = "Skallinjer";
+        sl.transform.anchorPoint.setValue([0, 0]);
+        sl.transform.position.setValue([0, 0]);
+        var root = sl.property("ADBE Root Vectors Group");
+
+        // 0-linje (tjockare, mer ogenomskinlig)
+        addHLineToRoot(root, "Noll-linje", CHART_LEFT, CHART_RIGHT, CHART_BOTTOM,
+            GRID_ZERO_WIDTH, 1, 1, 1, 0.7);
+
+        // GRID_DIVISIONS tunna skallinjer jämnt fördelade upp till yMax
+        for (var i = 1; i <= GRID_DIVISIONS; i++) {
+            var val  = cfg.yMax * (i / GRID_DIVISIONS);
+            var yPos = dataToCompPos(cfg.xMin, val, cfg)[1];
+            addHLineToRoot(root, "Skallinje " + i, CHART_LEFT, CHART_RIGHT, yPos,
+                GRID_SCALE_WIDTH, 1, 1, 1, 0.2);
+        }
+        return sl;
+    }
+
+    // Skapar ett Color Controller-null för EN serie (hamnar inuti pre-compen)
+    function createSeriesController(comp, sKey, col) {
         var nl = comp.layers.addNull();
         nl.name    = CONTROLLER_NAME;
         nl.enabled = false;
-        for (var i = 0; i < seriesKeys.length; i++) {
-            var fx = addFX(nl, "ADBE Color Control", "Color Control");
-            if (!fx) { continue; }
-            fx.name = seriesKeys[i];
-            var col = COLOR_PALETTE[i % COLOR_PALETTE.length];
+        var fx = addFX(nl, "ADBE Color Control", "Color Control");
+        if (fx) {
+            fx.name = sKey;
             try {
                 fx.property("ADBE Color Control-0001").setValue([col[0], col[1], col[2], 1]);
             } catch (e) {
@@ -236,8 +288,9 @@
         }
         return nl;
     }
-    // Skapar ett dolt null-lager per datapunkt — dessa fungerar som hantag för path-expressionen
+    // Skapar ett dolt null-lager per datapunkt — returnerar array av layers
     function createPointNulls(comp, sName, dataPoints, cfg) {
+        var layers = [];
         for (var i = 0; i < dataPoints.length; i++) {
             var pos = dataToCompPos(dataPoints[i].year, dataPoints[i].value, cfg);
             var nl  = comp.layers.addNull();
@@ -246,7 +299,9 @@
             nl.transform.position.setValue(pos);
             nl.enabled = false;
             nl.moveToEnd();
+            layers.push(nl);
         }
+        return layers;
     }
     // Skapar ett shapelayer med path-expression, stroke och animerad trim path
     function createLineShapeLayer(comp, sName, displayName, dataPoints, cfg) {
@@ -348,8 +403,9 @@
         try { tl.transform.position.expression = posExpr; } catch (e) {}
         return tl;
     }
-    // Skapar ett dolt textlager per datapunkt — placerat ovanför punkten
+    // Skapar ett dolt textlager per datapunkt — returnerar array av layers
     function createDataPointLabels(comp, sName, dataPoints, cfg) {
+        var layers = [];
         for (var i = 0; i < dataPoints.length; i++) {
             var pt     = dataPoints[i];
             var ptName = sName + "_pt" + i;
@@ -362,29 +418,57 @@
                 'var nl=thisComp.layer("' + ptName + '");\n' +
                 '[nl.transform.position[0],nl.transform.position[1]-' + LABEL_OFFSET_Y + '];';
             try { tl.transform.position.expression = posExpr; } catch (e) {}
+            layers.push(tl);
         }
+        return layers;
     }
-    // Skapar statiska x-axel-labels (år) längs underkanten av diagrammet
+    // Skapar x-axel-labels för första och sista året
     function createXAxisLabels(comp, cfg) {
         var years = cfg.uniqueYears;
-        for (var i = 0; i < years.length; i++) {
-            var xPx = dataToCompPos(years[i], cfg.yMin, cfg)[0];
-            var tl  = comp.layers.addText(years[i].toString());
-            tl.name = "XLabel_" + years[i];
+        if (years.length === 0) { return; }
+        var toShow = (years.length === 1)
+            ? [years[0]]
+            : [years[0], years[years.length - 1]];
+        for (var i = 0; i < toShow.length; i++) {
+            var yr  = toShow[i];
+            var xPx = dataToCompPos(yr, cfg.yMin, cfg)[0];
+            var tl  = comp.layers.addText(yr.toString());
+            tl.name = "XLabel_" + yr;
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
             applyTextStyle(textProp, FONT_SIZE_LABEL, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
             tl.transform.position.setValue([xPx, CHART_BOTTOM + 40]);
         }
     }
-    // Skapar alla lager för en enda dataserie
+    // Skapar alla lager för en serie och pre-kompar dem
+    // Color Controller hamnar inuti pre-compen → alla thisComp-uttryck fungerar
     function createSeriesLayers(comp, sIdx, sKey, cfg) {
         var sName = "S" + sIdx + "_" + sanitizeName(sKey);
         var pts   = cfg.seriesMap[sKey];
-        createPointNulls(comp, sName, pts, cfg);
-        createLineShapeLayer(comp, sName, sKey, pts, cfg);
-        createTrackerNull(comp, sName);
-        createDataPointLabels(comp, sName, pts, cfg);
-        createRunningLabel(comp, sName, cfg);
+        var col   = COLOR_PALETTE[sIdx % COLOR_PALETTE.length];
+
+        var allLayers = [];
+        allLayers.push(createSeriesController(comp, sKey, col));
+
+        var ptNulls = createPointNulls(comp, sName, pts, cfg);
+        for (var a = 0; a < ptNulls.length; a++) { allLayers.push(ptNulls[a]); }
+
+        allLayers.push(createLineShapeLayer(comp, sName, sKey, pts, cfg));
+        allLayers.push(createTrackerNull(comp, sName));
+
+        var lbls = createDataPointLabels(comp, sName, pts, cfg);
+        for (var b = 0; b < lbls.length; b++) { allLayers.push(lbls[b]); }
+
+        allLayers.push(createRunningLabel(comp, sName, cfg));
+
+        // Samla aktuella lagerindex och pre-kompa till en ren pre-comp
+        var indices = [];
+        for (var k = 0; k < allLayers.length; k++) {
+            if (allLayers[k]) { indices.push(allLayers[k].index); }
+        }
+        indices.sort(function (a, b) { return a - b; });
+        try {
+            comp.layers.precompose(indices, "Serie_" + sName, true);
+        } catch (e) {}
     }
     // Huvudfunktion: läser data och skapar hela kompositionen
     function createChart(footageItem, statusEl) {
@@ -415,7 +499,8 @@
                 createSeriesLayers(comp, si2, cfg.seriesKeys[si2], cfg);
             }
             createXAxisLabels(comp, cfg);
-            createControllerLayer(comp, cfg.seriesKeys);
+            createGridLines(comp, cfg);
+            createBackground(comp);
         } catch (e) {
             app.endUndoGroup();
             throw e;
