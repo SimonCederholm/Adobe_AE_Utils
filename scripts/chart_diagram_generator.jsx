@@ -87,10 +87,10 @@
             CHART_BOTTOM - yPct * (CHART_BOTTOM - CHART_TOP)
         ];
     }
-    // Applicerar ease-ease på ett keyframe (index 1-baserat)
+    // Applicerar ease-ease med hög influence på ett keyframe (index 1-baserat)
     function setEaseEase(prop, keyIdx) {
         try {
-            var e = new KeyframeEase(0, 33.33);
+            var e = new KeyframeEase(0, 80);
             prop.setTemporalEaseAtKey(keyIdx, [e], [e]);
         } catch (err) {}
     }
@@ -367,15 +367,8 @@
         try {
             trimEndProp.setValueAtTime(startSec, 0);
             trimEndProp.setValueAtTime(endSec, 100);
-            // Spike-ease expression (tanh-baserad, samma formel som spike_ease_2d.jsx, sharpness 8)
-            var spikeExpr =
-                'var startT=' + startSec.toFixed(4) + ';\n' +
-                'var endT='   + endSec.toFixed(4)   + ';\n' +
-                'var sh=8;\n' +
-                'var t=clamp((time-startT)/(endT-startT),0,1);\n' +
-                'var h=Math.tanh(sh*0.5);\n' +
-                'linear((Math.tanh(sh*(t-0.5))+h)/(2*h),0,1,0,100);';
-            trimEndProp.expression = spikeExpr;
+            setEaseEase(trimEndProp, 1);
+            setEaseEase(trimEndProp, 2);
         } catch (e) {}
         return sl;
     }
