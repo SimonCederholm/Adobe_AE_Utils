@@ -442,7 +442,7 @@
             tl.name = "XLabel_" + yr;
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
             applyTextStyle(textProp, FONT_SIZE_LABEL, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
-            tl.transform.position.setValue([xPx, CHART_BOTTOM + 40]);
+            tl.transform.position.setValue([xPx, CHART_BOTTOM + FONT_SIZE_LABEL]);
         }
     }
     // Skapar alla lager för en serie och pre-kompar dem
