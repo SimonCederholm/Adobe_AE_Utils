@@ -22,17 +22,18 @@
     var ANIM_TAIL_FRAMES      = 48;     // extra frames efter att animationen är klar
     var LABEL_OFFSET_Y        = 50;     // px ovanför datapunkt för dolda datalabels
     var RUNNING_OFFSET_Y      = 60;     // px ovanför tracker-null för running label
-    var FONT_NAME             = "Arial-BoldMT";
-    var FONT_SIZE_LABEL       = 28;
-    var FONT_SIZE_RUNNING     = 36;
-    var STROKE_WIDTH          = 4;
+    var FONT_NAME             = "IBMPlexSans-Medium";
+    var FONT_SIZE_LABEL       = 55;
+    var FONT_SIZE_RUNNING     = 55;
+    var STROKE_WIDTH          = 8;
     var COMP_WIDTH            = 1440;
     var COMP_HEIGHT           = 1440;
     var COMP_FPS              = 24;
     var CONTROLLER_NAME       = "Color Controller";
-    var GRID_ZERO_WIDTH       = 2;    // px, noll-linjens tjocklek
-    var GRID_SCALE_WIDTH      = 1;    // px, tunna skallinjer
+    var GRID_ZERO_WIDTH       = 6;    // px, noll-linjens tjocklek
+    var GRID_SCALE_WIDTH      = 2;    // px, tunna skallinjer
     var GRID_DIVISIONS        = 4;    // antal skallinjer ovanför 0
+    var GRID_LINE_COLOR       = [0.894, 0.953, 0.980]; // Ljusblå RGB 228/243/250
     // Färgpalett per serie — LF brand colors
     var COLOR_PALETTE = [
         [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160
@@ -231,7 +232,7 @@
     }
 
     // Lägger till en horisontell linje som en Vector Group i ett shape-lagers rot
-    function addHLineToRoot(root, name, x1, x2, y, strokeWidth, r, g, b, a) {
+    function addHLineToRoot(root, name, x1, x2, y, strokeWidth, alpha) {
         var grp    = root.addProperty("ADBE Vector Group");
         grp.name   = name;
         var grpVec = grp.property("ADBE Vectors Group");
@@ -247,7 +248,10 @@
         } catch (e) {}
         var stroke = grpVec.addProperty("ADBE Vector Graphic - Stroke");
         try { stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth); } catch (e) {}
-        try { stroke.property("ADBE Vector Stroke Color").setValue([r, g, b, a]); } catch (e) {}
+        try { stroke.property("ADBE Vector Stroke Line Cap").setValue(2); } catch (e) {} // Round cap
+        try { stroke.property("ADBE Vector Stroke Color").setValue(
+            [GRID_LINE_COLOR[0], GRID_LINE_COLOR[1], GRID_LINE_COLOR[2], alpha]
+        ); } catch (e) {}
     }
 
     // Skapar ett shapelager med noll-linje och GRID_DIVISIONS tunna skallinjer
@@ -260,14 +264,14 @@
 
         // 0-linje (tjockare, mer ogenomskinlig)
         addHLineToRoot(root, "Noll-linje", CHART_LEFT, CHART_RIGHT, CHART_BOTTOM,
-            GRID_ZERO_WIDTH, 1, 1, 1, 0.7);
+            GRID_ZERO_WIDTH, 0.7);
 
         // GRID_DIVISIONS tunna skallinjer jämnt fördelade upp till yMax
         for (var i = 1; i <= GRID_DIVISIONS; i++) {
             var val  = cfg.yMax * (i / GRID_DIVISIONS);
             var yPos = dataToCompPos(cfg.xMin, val, cfg)[1];
             addHLineToRoot(root, "Skallinje " + i, CHART_LEFT, CHART_RIGHT, yPos,
-                GRID_SCALE_WIDTH, 1, 1, 1, 0.2);
+                GRID_SCALE_WIDTH, 0.35);
         }
         return sl;
     }
