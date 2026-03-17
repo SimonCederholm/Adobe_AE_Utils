@@ -283,7 +283,6 @@
         var nl = comp.layers.addNull();
         nl.name    = CONTROLLER_NAME;
         nl.enabled = false;
-        nl.shy     = true;
         var fx = addFX(nl, "ADBE Color Control", "Color Control");
         if (fx) {
             fx.name = sKey;
