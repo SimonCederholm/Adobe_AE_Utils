@@ -431,6 +431,76 @@
         }
         return layers;
     }
+    // Skapar en horisontell legend centrerad under x-axeln
+    // Varje item: färgad linjeswatch + serienamn-text
+    function createLegend(comp, cfg) {
+        var LEGEND_Y      = CHART_BOTTOM + 145; // px under diagramytan
+        var SWATCH_W      = 70;                 // längd på linjeswatchen
+        var SWATCH_STROKE = 8;                  // linjetjocklek (matchar STROKE_WIDTH)
+        var TEXT_GAP      = 22;                 // avstånd swatch → text
+        var ITEM_GAP      = 90;                 // avstånd text-slut → nästa swatch
+        var FONT_SIZE_LEG = 50;
+        var CHAR_W_EST    = FONT_SIZE_LEG * 0.52; // grovt teckenbredd-estimat
+
+        // Beräkna bredd per item
+        var itemW = [];
+        for (var i = 0; i < cfg.seriesKeys.length; i++) {
+            itemW.push(SWATCH_W + TEXT_GAP + cfg.seriesKeys[i].length * CHAR_W_EST);
+        }
+        var totalW = 0;
+        for (var j = 0; j < itemW.length; j++) {
+            totalW += itemW[j];
+            if (j < itemW.length - 1) { totalW += ITEM_GAP; }
+        }
+
+        var startX = (COMP_WIDTH - totalW) / 2;
+
+        // Shape-lager för alla swatches
+        var sl = comp.layers.addShape();
+        sl.name = "Legend_Swatches";
+        sl.transform.anchorPoint.setValue([0, 0]);
+        sl.transform.position.setValue([0, 0]);
+        var root = sl.property("ADBE Root Vectors Group");
+        var curX = startX;
+        for (var si = 0; si < cfg.seriesKeys.length; si++) {
+            var col  = COLOR_PALETTE[si % COLOR_PALETTE.length];
+            var x1   = curX;
+            var x2   = curX + SWATCH_W;
+            var grp    = root.addProperty("ADBE Vector Group");
+            grp.name   = "Swatch_" + si;
+            var grpVec = grp.property("ADBE Vectors Group");
+            var pathGrp  = grpVec.addProperty("ADBE Vector Shape - Group");
+            var pathProp = pathGrp.property("ADBE Vector Shape");
+            try {
+                var sh = new Shape();
+                sh.vertices    = [[x1, LEGEND_Y], [x2, LEGEND_Y]];
+                sh.inTangents  = [[0, 0], [0, 0]];
+                sh.outTangents = [[0, 0], [0, 0]];
+                sh.closed = false;
+                pathProp.setValue(sh);
+            } catch (e) {}
+            var stroke = grpVec.addProperty("ADBE Vector Graphic - Stroke");
+            try { stroke.property("ADBE Vector Stroke Width").setValue(SWATCH_STROKE); } catch (e) {}
+            try { stroke.property("ADBE Vector Stroke Line Cap").setValue(2); } catch (e) {}
+            try { stroke.property("ADBE Vector Stroke Color").setValue([col[0], col[1], col[2], 1]); } catch (e) {}
+            curX += itemW[si] + ITEM_GAP;
+        }
+
+        // Text-lager per serie
+        curX = startX;
+        for (var ti = 0; ti < cfg.seriesKeys.length; ti++) {
+            var lbl   = cfg.seriesKeys[ti];
+            var textX = curX + SWATCH_W + TEXT_GAP;
+            var tl    = comp.layers.addText(lbl);
+            tl.name   = "Legend_" + sanitizeName(lbl);
+            var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
+            applyTextStyle(textProp, FONT_SIZE_LEG, [1, 1, 1], ParagraphJustification.LEFT_JUSTIFY);
+            // Justera y så textmitten fluchtar mot swatchlinjen
+            tl.transform.position.setValue([textX, LEGEND_Y + FONT_SIZE_LEG * 0.33]);
+            curX += itemW[ti] + ITEM_GAP;
+        }
+    }
+
     // Skapar x-axel-labels för första och sista året
     function createXAxisLabels(comp, cfg) {
         var years = cfg.uniqueYears;
@@ -524,6 +594,7 @@
                 var pcLayer = createSeriesLayers(comp, si2, cfg.seriesKeys[si2], cfg);
                 if (pcLayer) { precompLayers.push(pcLayer); }
             }
+            createLegend(comp, cfg);
             // Samla alla serie-pre-compar i en mapp i projektet
             if (precompLayers.length > 0) {
                 try {
