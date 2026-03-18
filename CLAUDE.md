@@ -110,6 +110,32 @@ Använd aldrig den generiska `sp()` för Levels eller andra effekter med känd n
 
 ---
 
+## Säkerhetsgranskning – VIKTIGT
+
+Granska **all kod** innan commit. Kontrollera följande punkter:
+
+### Expressions (.jsx – klistras in i AE)
+- Inga hårdkodade sökvägar eller filsystemsreferenser (`File`, `Folder`, `system`).
+- Inga nätverksanrop eller externa beroenden.
+- Inga `eval()`-anrop eller dynamisk kodkörning.
+- Inga oändliga loopar utan tydligt avslutvillkor.
+
+### ScriptUI-scripts (.jsx – körs i ExtendScript)
+- Inga `system.callSystem()`, `app.system` eller shell-anrop.
+- Filläsning/skrivning (`File`, `Folder`) är tillåten för scripts men ska vara explicit och avsiktlig – inga sökvägar hårdkodade till systemkataloger som `/etc/`, `C:\Windows\` etc.
+- Inga nätverksanrop (`Socket`, XMLHttpRequest eller liknande).
+- Inga `eval()`-anrop på extern eller användarinmatad data.
+- Indata från UI-fält ska valideras innan användning (t.ex. kontrollera att numeriska fält faktiskt innehåller tal).
+
+### Allmänt
+- Inga känsliga uppgifter (lösenord, API-nycklar, tokens) i koden.
+- Inga kommenterade-bort kodblock som innehåller säkerhetsproblem.
+- Tydliga felhanteringsblock – `try/catch` i ScriptUI-scripts där fel kan uppstå.
+
+**Om ett problem hittas:** åtgärda det innan commit. Skapa aldrig en commit med känd säkerhetsbrist.
+
+---
+
 ## README.md
 
 Uppdatera `README.md` varje gång en ny fil läggs till.
