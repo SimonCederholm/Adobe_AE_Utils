@@ -196,9 +196,12 @@
             } catch (e) {}
         }
 
+        // framesToTime() är opålitlig i AE 2026 JS engine → använd N/thisComp.frameRate
+        var delayExpr = 'var delay = ' + frames + ' / thisComp.frameRate;';
+
         // Ingen matchande property ovanför → fallback till absolut expression
         if (!aboveProp) {
-            return 'var delay = framesToTime(' + frames + ');\n' +
+            return delayExpr + '\n' +
                    'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
                    'above.valueAtTime(time - delay)';
         }
@@ -208,7 +211,7 @@
         if (typeof ownVal === 'number') {
             // 1D – rotation, opacity m.m.
             var offset = ownVal - aboveVal;
-            return 'var delay = framesToTime(' + frames + ');\n' +
+            return delayExpr + '\n' +
                    'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
                    'above.valueAtTime(time - delay) + (' + offset + ')';
         }
@@ -219,14 +222,14 @@
             for (var d = 0; d < ownVal.length; d++) {
                 parts.push('d[' + d + '] + (' + (ownVal[d] - aboveVal[d]) + ')');
             }
-            return 'var delay = framesToTime(' + frames + ');\n' +
+            return delayExpr + '\n' +
                    'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
                    'var d = above.valueAtTime(time - delay);\n' +
                    '[' + parts.join(', ') + ']';
         }
 
         // Okänd typ → fallback
-        return 'var delay = framesToTime(' + frames + ');\n' +
+        return delayExpr + '\n' +
                'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
                'above.valueAtTime(time - delay)';
     }
