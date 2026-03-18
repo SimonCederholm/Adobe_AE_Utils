@@ -181,21 +181,71 @@
 
     // ── DELAY ─────────────────────────────────────────────────────────────────
 
-    // Söker rekursivt igenom property-trädet och sätter delay-expression
+    // Bygger en relativ delay-expression med inbakad offset (ownVal − aboveVal).
+    // prop.value läses INNAN expressionen sätts → ingen cirkulär referens.
+    // Fungerar för 1D (rotation, opacity), 2D (position, scale) och 3D (position 3D).
+    function buildRelativeDelayExpr(prop, aboveLayer, frames) {
+        var ownVal    = prop.value;
+        var aboveProp = null;
+
+        if (aboveLayer) {
+            try {
+                var ab = aboveLayer.property("ADBE Transform Group").property(prop.matchName);
+                ab.value; // verifiera att property finns och är läsbar
+                aboveProp = ab;
+            } catch (e) {}
+        }
+
+        // Ingen matchande property ovanför → fallback till absolut expression
+        if (!aboveProp) {
+            return 'var delay = framesToTime(' + frames + ');\n' +
+                   'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
+                   'above.valueAtTime(time - delay)';
+        }
+
+        var aboveVal = aboveProp.value;
+
+        if (typeof ownVal === 'number') {
+            // 1D – rotation, opacity m.m.
+            var offset = ownVal - aboveVal;
+            return 'var delay = framesToTime(' + frames + ');\n' +
+                   'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
+                   'above.valueAtTime(time - delay) + (' + offset + ')';
+        }
+
+        if (ownVal.length >= 2) {
+            // 2D eller 3D – position, scale m.m.
+            var parts = [];
+            for (var d = 0; d < ownVal.length; d++) {
+                parts.push('d[' + d + '] + (' + (ownVal[d] - aboveVal[d]) + ')');
+            }
+            return 'var delay = framesToTime(' + frames + ');\n' +
+                   'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
+                   'var d = above.valueAtTime(time - delay);\n' +
+                   '[' + parts.join(', ') + ']';
+        }
+
+        // Okänd typ → fallback
+        return 'var delay = framesToTime(' + frames + ');\n' +
+               'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
+               'above.valueAtTime(time - delay)';
+    }
+
+    // Söker rekursivt igenom property-trädet och sätter relativ delay-expression
     // på alla markerade egenskaper som stödjer expressions.
-    function applyDelayToProps(propGroup, expr) {
+    function applyDelayToPropsRecursive(propGroup, aboveLayer, frames) {
         for (var i = 1; i <= propGroup.numProperties; i++) {
             var prop;
             try { prop = propGroup.property(i); } catch (e) { continue; }
             try {
                 if (prop.selected && prop.canSetExpression) {
-                    prop.expression = expr;
+                    prop.expression = buildRelativeDelayExpr(prop, aboveLayer, frames);
                 }
             } catch (e) {}
             try {
                 if (prop.propertyType === PropertyType.INDEXED_GROUP ||
                     prop.propertyType === PropertyType.NAMED_GROUP) {
-                    applyDelayToProps(prop, expr);
+                    applyDelayToPropsRecursive(prop, aboveLayer, frames);
                 }
             } catch (e) {}
         }
@@ -207,16 +257,17 @@
         var layers = comp.selectedLayers;
         if (!layers.length) { alert("Markera minst ett lager."); return; }
 
-        // Expression-mall från användaren – appliceras på markerade properties.
-        // Förutsätter att lagret ovanför (index - 1) har en matchande transform-property.
-        var expr =
-            'var delay = framesToTime(' + frames + ');\n' +
-            'var above = thisComp.layer(index - 1).transform(thisProperty.name);\n' +
-            'above.valueAtTime(time - delay)';
-
         app.beginUndoGroup("Apply Delay Expression");
-        for (var i = 0; i < layers.length; i++) {
-            applyDelayToProps(layers[i], expr);
+        try {
+            for (var i = 0; i < layers.length; i++) {
+                var layer      = layers[i];
+                var aboveLayer = (layer.index > 1) ? comp.layer(layer.index - 1) : null;
+                applyDelayToPropsRecursive(layer, aboveLayer, frames);
+            }
+        } catch (e) {
+            app.endUndoGroup();
+            alert("Delay fel: " + e.toString());
+            return;
         }
         app.endUndoGroup();
     }
