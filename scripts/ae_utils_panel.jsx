@@ -53,26 +53,33 @@
         if (!layers.length) { alert("Markera minst ett lager."); return; }
 
         app.beginUndoGroup("Set Anchor Point");
-        for (var i = 0; i < layers.length; i++) {
-            var layer   = layers[i];
-            var apProp  = layer.property("ADBE Anchor Point");
-            var posProp = layer.property("ADBE Position");
+        try {
+            for (var i = 0; i < layers.length; i++) {
+                var layer   = layers[i];
+                var tfm     = layer.property("ADBE Transform Group");
+                var apProp  = tfm.property("ADBE Anchor Point");
+                var posProp = tfm.property("ADBE Position");
 
-            var currentAP  = apProp.value;
-            var currentPos = posProp.value;
-            var rect  = layer.sourceRectAtTime(comp.time, false);
-            var newAP = calcAnchor(rect, corner);
+                var currentAP  = apProp.value;
+                var currentPos = posProp.value;
+                var rect  = layer.sourceRectAtTime(comp.time, false);
+                var newAP = calcAnchor(rect, corner);
 
-            // Kompensera position så lagret inte hoppar visuellt
-            var dx = newAP[0] - currentAP[0];
-            var dy = newAP[1] - currentAP[1];
-            if (layer.threeDLayer) {
-                posProp.setValue([currentPos[0] + dx, currentPos[1] + dy, currentPos[2]]);
-            } else {
-                posProp.setValue([currentPos[0] + dx, currentPos[1] + dy]);
+                // Kompensera position så lagret inte hoppar visuellt
+                var dx = newAP[0] - currentAP[0];
+                var dy = newAP[1] - currentAP[1];
+                if (layer.threeDLayer) {
+                    posProp.setValue([currentPos[0] + dx, currentPos[1] + dy, currentPos[2]]);
+                } else {
+                    posProp.setValue([currentPos[0] + dx, currentPos[1] + dy]);
+                }
+
+                apProp.expression = ANCHOR_EXPRS[corner];
             }
-
-            apProp.expression = ANCHOR_EXPRS[corner];
+        } catch (e) {
+            app.endUndoGroup();
+            alert("Anchor Point fel: " + e.toString());
+            return;
         }
         app.endUndoGroup();
     }
@@ -95,10 +102,12 @@
         if (!txtLayer) { alert("Markera ett textlager."); return; }
 
         app.beginUndoGroup("Create Textbox");
+        try {
 
         // 1. Centrera textlagrets ankarpunkt + kompensera position
-        var apProp  = txtLayer.property("ADBE Anchor Point");
-        var posProp = txtLayer.property("ADBE Position");
+        var tfm     = txtLayer.property("ADBE Transform Group");
+        var apProp  = tfm.property("ADBE Anchor Point");
+        var posProp = tfm.property("ADBE Position");
         var currentAP  = apProp.value;
         var currentPos = posProp.value;
         var rect  = txtLayer.sourceRectAtTime(comp.time, false);
@@ -162,6 +171,11 @@
         var fill = inner.addProperty("ADBE Vector Graphic - Fill");
         fill.property("ADBE Vector Fill Color").setValue([1, 1, 1, 1]); // vit – ändra vid behov
 
+        } catch (e) {
+            app.endUndoGroup();
+            alert("Textbox fel: " + e.toString());
+            return;
+        }
         app.endUndoGroup();
     }
 
