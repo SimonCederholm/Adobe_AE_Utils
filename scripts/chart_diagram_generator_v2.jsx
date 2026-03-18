@@ -20,7 +20,7 @@
     var CHART_BOTTOM          = 1200;   // px, nedre kant (låga värden)
     var COMP_DURATION_SEC     = 10;     // kompens totala längd (alltid fast)
     var ANIM_DURATION_SEC     = 4;      // trim-path-animationen tar alltid 4 sekunder
-    var ANIM_START_FRAME      = 24;     // frame där trim-path-animeringen börjar
+    var ANIM_START_FRAME      = 0;      // frame där trim-path-animeringen börjar
     var LABEL_OFFSET_Y        = 50;     // px ovanför datapunkt för dolda datalabels
     var RUNNING_OFFSET_Y      = 60;     // px ovanför tracker-null för running label
     var FONT_NAME             = "IBMPlexSans-Medium";
@@ -409,6 +409,13 @@
             'var p=thisComp.layer("' + trackerName + '").transform.position;\n' +
             '[p[0],p[1]-' + RUNNING_OFFSET_Y + '];';
         try { tl.transform.position.expression = posExpr; } catch (e) {}
+        // Fade in opacity 0→100 från frame 66 (2s+18f) under 6 frames
+        try {
+            var fadeStartSec = (2 * COMP_FPS + 18) / COMP_FPS;
+            var fadeEndSec   = (2 * COMP_FPS + 24) / COMP_FPS;
+            tl.transform.opacity.setValueAtTime(fadeStartSec, 0);
+            tl.transform.opacity.setValueAtTime(fadeEndSec, 100);
+        } catch (e) {}
         return tl;
     }
     function createDataPointLabels(comp, sName, dataPoints, cfg) {
