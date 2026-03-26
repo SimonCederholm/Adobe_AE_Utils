@@ -48,11 +48,11 @@
     ];
     // Palett för transparent bakgrund — börjar med mörka brand-färger som syns på ljus bak
     var TRANSPARENT_PALETTE = [
+        [0.063, 0.247, 0.455],  // Navy       RGB 16/63/116    #103f74
+        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92    #eb5c5c
         [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160     #005aa0
         [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19     #e30613
         [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100  #6da964
-        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92    #eb5c5c
-        [0.063, 0.247, 0.455],  // Navy       RGB 16/63/116    #103f74
         [0.714, 0.882, 0.969],  // Turkos     RGB 182/225/247  #b6e1f7
         [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223  #e2efdf
         [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250  #e4f3fa
