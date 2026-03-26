@@ -46,6 +46,17 @@
         [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223  #e2efdf
         [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250  #e4f3fa
     ];
+    // Palett för transparent bakgrund — börjar med mörka brand-färger som syns på ljus bak
+    var TRANSPARENT_PALETTE = [
+        [0.000, 0.353, 0.627],  // LF Blå     RGB 0/90/160     #005aa0
+        [0.890, 0.024, 0.075],  // LF Röd     RGB 227/6/19     #e30613
+        [0.427, 0.663, 0.392],  // Grön       RGB 109/169/100  #6da964
+        [0.922, 0.361, 0.361],  // Peach      RGB 235/92/92    #eb5c5c
+        [0.063, 0.247, 0.455],  // Navy       RGB 16/63/116    #103f74
+        [0.714, 0.882, 0.969],  // Turkos     RGB 182/225/247  #b6e1f7
+        [0.886, 0.937, 0.875],  // Mint grön  RGB 226/239/223  #e2efdf
+        [0.894, 0.953, 0.980]   // Ljusblå    RGB 228/243/250  #e4f3fa
+    ];
     var BG_COLOR = [0.063, 0.247, 0.455]; // Navy #103f74  RGB 16/63/116
     // Aktivt teckensnitt — uppdateras av UI-fontväljaren
     var selectedFont  = FONT_NAME;
@@ -465,9 +476,10 @@
         sl.transform.anchorPoint.setValue([0, 0]);
         sl.transform.position.setValue([0, 0]);
         var root = sl.property("ADBE Root Vectors Group");
+        var legendPalette = cfg.transparent ? TRANSPARENT_PALETTE : COLOR_PALETTE;
         var curX = startX;
         for (var si = 0; si < cfg.seriesKeys.length; si++) {
-            var col  = COLOR_PALETTE[si % COLOR_PALETTE.length];
+            var col  = legendPalette[si % legendPalette.length];
             var x1   = curX;
             var x2   = curX + SWATCH_W;
             var grp    = root.addProperty("ADBE Vector Group");
@@ -520,9 +532,10 @@
         }
     }
     function createSeriesLayers(comp, sIdx, sKey, cfg) {
-        var sName = "S" + sIdx + "_" + sanitizeName(sKey);
-        var pts   = cfg.seriesMap[sKey];
-        var col   = COLOR_PALETTE[sIdx % COLOR_PALETTE.length];
+        var sName    = "S" + sIdx + "_" + sanitizeName(sKey);
+        var pts      = cfg.seriesMap[sKey];
+        var palette  = cfg.transparent ? TRANSPARENT_PALETTE : COLOR_PALETTE;
+        var col      = palette[sIdx % palette.length];
 
         var allLayers = [];
         allLayers.push(createSeriesController(comp, sKey, col));
