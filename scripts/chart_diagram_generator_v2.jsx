@@ -48,7 +48,9 @@
     ];
     var BG_COLOR = [0.063, 0.247, 0.455]; // Navy #103f74  RGB 16/63/116
     // Aktivt teckensnitt — uppdateras av UI-fontväljaren
-    var selectedFont = FONT_NAME;
+    var selectedFont  = FONT_NAME;
+    // Aktivt tema — "navy" eller "transparent", uppdateras av UI-kryssrutan
+    var selectedTheme = "navy";
     // =========================================================================
     // HELPERS
     // =========================================================================
@@ -223,7 +225,7 @@
         return solid;
     }
 
-    function addHLineToRoot(root, name, x1, x2, y, strokeWidth, alpha) {
+    function addHLineToRoot(root, name, x1, x2, y, strokeWidth, color, alpha) {
         var grp    = root.addProperty("ADBE Vector Group");
         grp.name   = name;
         var grpVec = grp.property("ADBE Vectors Group");
@@ -241,7 +243,7 @@
         try { stroke.property("ADBE Vector Stroke Width").setValue(strokeWidth); } catch (e) {}
         try { stroke.property("ADBE Vector Stroke Line Cap").setValue(2); } catch (e) {}
         try { stroke.property("ADBE Vector Stroke Color").setValue(
-            [GRID_LINE_COLOR[0], GRID_LINE_COLOR[1], GRID_LINE_COLOR[2], alpha]
+            [color[0], color[1], color[2], alpha]
         ); } catch (e) {}
     }
 
@@ -253,13 +255,13 @@
         var root = sl.property("ADBE Root Vectors Group");
 
         addHLineToRoot(root, "Noll-linje", CHART_LEFT, CHART_RIGHT, CHART_BOTTOM,
-            GRID_ZERO_WIDTH, 0.7);
+            GRID_ZERO_WIDTH, cfg.gridColor, 0.7);
 
         for (var i = 1; i <= GRID_DIVISIONS; i++) {
             var val  = cfg.yMax * (i / GRID_DIVISIONS);
             var yPos = dataToCompPos(cfg.xMin, val, cfg)[1];
             addHLineToRoot(root, "Skallinje " + i, CHART_LEFT, CHART_RIGHT, yPos,
-                GRID_SCALE_WIDTH, 0.35);
+                GRID_SCALE_WIDTH, cfg.gridColor, 0.35);
         }
         return sl;
     }
@@ -269,7 +271,7 @@
     function createYAxisLabels(comp, cfg) {
         var FONT_SIZE_Y  = 40;
         var ABOVE_LINE   = 12; // px ovanför strecket (baseline-offset)
-        var col = [GRID_LINE_COLOR[0], GRID_LINE_COLOR[1], GRID_LINE_COLOR[2]];
+        var col = cfg.gridColor;
 
         // En etikett per skallinje (ingen etikett för 0-linjen)
         for (var i = 1; i <= GRID_DIVISIONS; i++) {
@@ -393,7 +395,7 @@
         var tl = comp.layers.addText("0");
         tl.name = "Running_" + sName;
         var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
-        applyTextStyle(textProp, FONT_SIZE_RUNNING, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
+        applyTextStyle(textProp, FONT_SIZE_RUNNING, cfg.textColor, ParagraphJustification.CENTER_JUSTIFY);
         var cBot = CHART_BOTTOM;
         var cTop = CHART_TOP;
         var yMin = cfg.yMin;
@@ -495,7 +497,7 @@
             var tl    = comp.layers.addText(lbl);
             tl.name   = "Legend_" + sanitizeName(lbl);
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
-            applyTextStyle(textProp, FONT_SIZE_LEG, [1, 1, 1], ParagraphJustification.LEFT_JUSTIFY);
+            applyTextStyle(textProp, FONT_SIZE_LEG, cfg.textColor, ParagraphJustification.LEFT_JUSTIFY);
             tl.transform.position.setValue([textX, LEGEND_Y + FONT_SIZE_LEG * 0.33]);
             curX += itemW[ti] + ITEM_GAP;
         }
@@ -513,7 +515,7 @@
             var tl  = comp.layers.addText(yr.toString());
             tl.name = "XLabel_" + yr;
             var textProp = tl.property("ADBE Text Properties").property("ADBE Text Document");
-            applyTextStyle(textProp, FONT_SIZE_LABEL, [1, 1, 1], ParagraphJustification.CENTER_JUSTIFY);
+            applyTextStyle(textProp, FONT_SIZE_LABEL, cfg.textColor, ParagraphJustification.CENTER_JUSTIFY);
             tl.transform.position.setValue([xPx, CHART_BOTTOM + FONT_SIZE_LABEL + 20]);
         }
     }
@@ -551,10 +553,13 @@
         return precompLayer;
     }
     // Huvudfunktion: läser data och skapar hela kompositionen
-    function createChart(footageItem, statusEl) {
+    function createChart(footageItem, statusEl, transparent) {
         if (!app.project) { throw new Error("Inget projekt öppet."); }
         setStatus("Läser JSON-data\u2026", statusEl);
         var cfg = parseChartData(footageItem);
+        cfg.transparent = !!transparent;
+        cfg.textColor   = transparent ? BG_COLOR : [1, 1, 1];
+        cfg.gridColor   = transparent ? BG_COLOR : GRID_LINE_COLOR;
         var maxPts = 0;
         for (var si = 0; si < cfg.seriesKeys.length; si++) {
             var n = cfg.seriesMap[cfg.seriesKeys[si]].length;
@@ -575,7 +580,7 @@
                 compName, COMP_WIDTH, COMP_HEIGHT, 1,
                 totalFrames / COMP_FPS, COMP_FPS
             );
-            createBackground(comp);
+            if (!transparent) { createBackground(comp); }
             createGridLines(comp, cfg);
             createYAxisLabels(comp, cfg);
             createXAxisLabels(comp, cfg);
@@ -704,6 +709,12 @@
 
         populateFontList();
 
+        var themeRow = w.add("group");
+        themeRow.orientation   = "row";
+        themeRow.alignChildren = ["left", "center"];
+        var transparentCb = themeRow.add("checkbox", undefined, "Transparent bakgrund (mörka linjer)");
+        transparentCb.value = false;
+
         var createBtn = w.add("button", undefined, "Skapa diagram");
         createBtn.alignment = ["fill", "top"];
         w.add("panel", undefined, "").alignment = ["fill", "top"];
@@ -728,7 +739,7 @@
                 return;
             }
             try {
-                createChart(item, statusEl);
+                createChart(item, statusEl, transparentCb.value);
             } catch (e) {
                 statusEl.text = "Fel: " + e.message;
             }
