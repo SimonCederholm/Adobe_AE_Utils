@@ -1,0 +1,84 @@
+/**
+ * @name        Controller – Format Scale
+ * @category    utility
+ * @type        expression
+ * @description Sätter lagrets skala utifrån dropdown-menyerna "Format"
+ *              (4x5 / 9x16 / 16x9) och "Devis" på null-lagret "controller".
+ * @usage       Applicera på Scale-egenskapen på det lager som ska följa
+ *              formatet. Använd controller_format_position.jsx på samma lagers
+ *              Position-egenskap.
+ * @ae-version  2026
+ */
+
+// ── Controller · Format → Scale ──────────────────────────────
+//
+// Krav:
+//   - Ett null-lager döpt till "controller"
+//   - Dropdown Menu Control "Format" med alternativen:
+//       1 = 4x5
+//       2 = 9x16
+//       3 = 16x9
+//   - Dropdown Menu Control "Devis" med alternativen:
+//       1 = Ingen
+//       2 = A
+//       3 = B
+//     Allt utom "Ingen" räknas som "devis valt".
+//
+// Värdetabell (Y-position / skala i %):
+//   4x5                 y 1340   100 %
+//   4x5  + devis        y 1240   107 %
+//   9x16                default  default   ← lagrets egna värden
+//   9x16 + devis        y 1120   107 %
+//   16x9                y 1332    84 %
+//   16x9 + devis        y 1340    97 %
+//
+// relativSkala = true  → tabellvärdet används som faktor på lagrets egen
+//                        skala (100 % = orörd). Behåller ev. skalanimation.
+// relativSkala = false → tabellvärdet sätts som absolut skala i procent.
+// Med ett lager som står på 100 % ger båda lägena samma resultat.
+//
+// ─────────────────────────────────────────────────────────────
+
+var ctrlLager    = "controller"; // Null-lagret med dropdown-menyerna
+var ddFormat     = "Format";     // Effektnamn på format-dropdownen
+var ddDevis      = "Devis";      // Effektnamn på devis-dropdownen
+var relativSkala = true;         // Se förklaring ovan
+
+// Tabell per format: [utan devis, med devis] → [yPosition, skalaProcent]
+// null = använd lagrets egna värden (default)
+var tabell = [
+    null,                             // index 0 – oanvänt
+    [[1340, 100], [1240, 107]],       // 1 = 4x5
+    [null,        [1120, 107]],       // 2 = 9x16
+    [[1332,  84], [1340,  97]]        // 3 = 16x9
+];
+
+// ─────────────────────────────────────────────────────────────
+
+// Läser en dropdown säkert – saknas lagret eller effekten används fallback
+function ddVarde(lagerNamn, effektNamn, fallback) {
+    try {
+        return thisComp.layer(lagerNamn).effect(effektNamn)("Menu").value;
+    } catch (err) {
+        return fallback;
+    }
+}
+
+var format = ddVarde(ctrlLager, ddFormat, 2); // 2 = 9x16 (default)
+var devis  = ddVarde(ctrlLager, ddDevis,  1); // 1 = Ingen
+
+var post = null;
+if (format >= 1 && format < tabell.length) {
+    post = tabell[format][(devis > 1) ? 1 : 0];
+}
+
+if (post === null) {
+    value; // Default – lagrets egen skala
+} else {
+    var procent = post[1];
+    var ut = [];
+    for (var i = 0; i < value.length; i++) {
+        ut[i] = relativSkala ? value[i] * procent / 100 : procent;
+    }
+    ut;
+}
