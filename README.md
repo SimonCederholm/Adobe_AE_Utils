@@ -47,7 +47,12 @@ A collection of After Effects expressions and ScriptUI panels for **Adobe After 
 
 > Helper expressions – clamp, delay, freeze, etc.
 
-*No expressions yet.*
+| File | Description |
+|------|-------------|
+| `controller_farg_rits_opacity.jsx` | Toggles visibility between two layers (`färg` and `rits`) from a Dropdown Menu Control named "Färg/Rits" on the null layer `controller`. Selecting one hides the other. Apply the same expression to the Opacity property of both layers – the active layer keeps its own opacity value, the other is forced to 0. |
+| `controller_devis_opacity.jsx` | Three-state visibility toggle driven by a Dropdown Menu Control named "Devis" on the null layer `controller`: Ingen (nothing visible), A (only layer `A`) or B (only layer `B`). Apply the same expression to the Opacity property of both devis layers. |
+| `controller_format_position.jsx` | Sets vertical position from the "Format" (4x5 / 9x16 / 16x9) and "Devis" dropdowns on the null layer `controller`. Horizontal position is left untouched (keeps the layer's own X by default, optionally locked to 1280); 9x16 without devis falls back to the layer's own values. Apply to the Position property. |
+| `controller_format_scale.jsx` | Sets scale from the same "Format" and "Devis" dropdowns as `controller_format_position.jsx` (100 / 107 / 84 / 97 %, 9x16 without devis = the layer's own value). Scale can be applied relative to the layer's own value (default, preserves scale animation) or as an absolute percentage. Apply to the Scale property. |
 
 ---
 
