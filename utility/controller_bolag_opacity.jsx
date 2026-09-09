@@ -3,9 +3,11 @@
  * @category    utility
  * @type        expression
  * @description Visar det lager vars namn matchar valt alternativ i en Dropdown
- *              Menu Control döpt till "Bolag" på null-lagret "controller".
+ *              Menu Control döpt till "Bolag" på null-lagret "controller"
+ *              i Main-compen.
  *              Alla övriga bolagslager döljs.
- * @usage       Applicera på Opacity-egenskapen på SAMTLIGA bolagslager. Exakt
+ * @usage       Applicera på Opacity-egenskapen på SAMTLIGA bolagslager inuti
+ *              precompen "Bolag". Exakt
  *              samma uttryck används på alla – vilket lager som visas avgörs av
  *              lagrets eget namn jämfört med listan nedan.
  * @ae-version  2026
@@ -14,9 +16,16 @@
 // ── Controller · Bolag ───────────────────────────────────────
 //
 // Krav:
-//   - Ett null-lager döpt till "controller"
+//   - Ett null-lager döpt till "controller" i Main-compen
 //   - En Dropdown Menu Control på controllern döpt till "Bolag"
-//   - Ett lager per bolag, döpt exakt som posterna i bolag-listan
+//   - Ett lager per bolag inuti precompen "Bolag", döpt exakt som
+//     posterna i bolag-listan
+//
+// Nästlade compositions:
+//   controller-nullen ligger i Main-compen medan lagret som styrs ligger i en
+//   precomp. `thisComp` skulle då peka på precompen, inte på Main – därför
+//   läses controllern via comp("Main"). Byter du namn på Main-compen måste
+//   mainComp nedan uppdateras.
 //
 // VIKTIGT: Dropdown-menyns alternativ måste ligga i EXAKT samma ordning
 // som bolag-listan nedan. AE:s dropdown returnerar bara ett index (1, 2,
@@ -33,6 +42,7 @@
 //
 // ─────────────────────────────────────────────────────────────
 
+var mainComp    = "Main";        // Compen där controller-nullen ligger
 var ctrlLager   = "controller";  // Null-lagret med dropdown-menyerna
 var ddNamn      = "Bolag";       // Effektnamn på Dropdown Menu Control
 var standardVal = 1;             // Fallback om controller/dropdown saknas
@@ -67,10 +77,11 @@ var bolag = [
 
 // ─────────────────────────────────────────────────────────────
 
-// Läser en dropdown säkert – saknas lagret eller effekten används fallback
-function ddVarde(lagerNamn, effektNamn, fallback) {
+// Läser en dropdown säkert – saknas compen, lagret eller effekten
+// används fallback
+function ddVarde(compNamn, lagerNamn, effektNamn, fallback) {
     try {
-        return thisComp.layer(lagerNamn).effect(effektNamn)("Menu").value;
+        return comp(compNamn).layer(lagerNamn).effect(effektNamn)("Menu").value;
     } catch (err) {
         return fallback;
     }
@@ -81,7 +92,7 @@ function normalisera(txt) {
     return txt.replace(/^\s+|\s+$/g, "").toLowerCase();
 }
 
-var val      = ddVarde(ctrlLager, ddNamn, standardVal);
+var val      = ddVarde(mainComp, ctrlLager, ddNamn, standardVal);
 var valtNamn = (val >= 1 && val <= bolag.length) ? normalisera(bolag[val - 1]) : "";
 var mittNamn = normalisera(thisLayer.name);
 
