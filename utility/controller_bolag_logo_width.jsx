@@ -16,28 +16,18 @@
 // Krav:
 //   - Ett null-lager döpt till "controller"
 //   - En Dropdown Menu Control på controllern döpt till "Bolag"
-//   - Ett logolager per bolag, döpt exakt som posterna i bolag-listan
+//   - Ett logolager per bolag, döpt exakt som posterna i listan nedan
 //
-// Returnerar logotypens källbredd multiplicerad med både logolagrets
-// egen skala och det här lagrets skala – dvs. bredden så som den faktiskt
-// ser ut i compen när logotypen är parentad till det här lagret.
-//
-// VIKTIGT: Dropdown-menyns alternativ måste ligga i EXAKT samma ordning
-// som bolag-listan nedan – AE:s dropdown returnerar bara ett index, inte
-// alternativets text. Listan måste alltså hållas i synk med listan i
+// AE:s dropdown returnerar bara ett index (1, 2, 3 …), aldrig alternativets
+// text. Listan nedan översätter index till lagernamn och måste därför ligga
+// i EXAKT samma ordning som dropdown-menyns alternativ – samma lista som i
 // controller_bolag_opacity.jsx.
 //
-// Saknas det valda lagret används reservLager ("Logo") i stället, så att
-// uttrycket inte kastar fel medan lagren byggs upp.
+// Returnerar logotypens källbredd gånger logolagrets egen skala gånger det
+// här lagrets skala – dvs. bredden så som den faktiskt ser ut i compen.
 //
 // ─────────────────────────────────────────────────────────────
 
-var ctrlLager   = "controller";  // Null-lagret med dropdown-menyerna
-var ddNamn      = "Bolag";       // Effektnamn på Dropdown Menu Control
-var reservLager = "Logo";        // Används om valt lager inte finns
-var standardVal = 1;             // Fallback om controller/dropdown saknas
-
-// Alternativ 1, 2, 3 … i samma ordning som i dropdown-menyn
 var bolag = [
     "Bergslagen",             //  1
     "Blekinge",               //  2
@@ -67,38 +57,11 @@ var bolag = [
 
 // ─────────────────────────────────────────────────────────────
 
-// Läser en dropdown säkert – saknas lagret eller effekten används fallback
-function ddVarde(lagerNamn, effektNamn, fallback) {
-    try {
-        return thisComp.layer(lagerNamn).effect(effektNamn)("Menu").value;
-    } catch (err) {
-        return fallback;
-    }
-}
+var val       = thisComp.layer("controller").effect("Bolag")("Menu");
+var logoLager = thisComp.layer(bolag[val - 1]);
 
-// Hämtar ett lager säkert – returnerar null om det inte finns
-function hittaLager(lagerNamn) {
-    try {
-        return thisComp.layer(lagerNamn);
-    } catch (err) {
-        return null;
-    }
-}
+var logoWidth = logoLager.sourceRectAtTime().width;
+var nullScale = transform.scale[0] / 100;
+var logoScale = (logoLager.transform.scale[0] * nullScale) / 100;
 
-var val       = ddVarde(ctrlLager, ddNamn, standardVal);
-var valtNamn  = (val >= 1 && val <= bolag.length) ? bolag[val - 1] : reservLager;
-var logoLager = hittaLager(valtNamn);
-
-if (logoLager === null) {
-    logoLager = hittaLager(reservLager);
-}
-
-if (logoLager === null) {
-    value; // Varken valt lager eller reservlager finns
-} else {
-    var logoWidth = logoLager.sourceRectAtTime().width;
-    var nullScale = transform.scale[0] / 100;
-    var logoScale = (logoLager.transform.scale[0] * nullScale) / 100;
-
-    logoWidth * logoScale;
-}
+logoWidth * logoScale;
