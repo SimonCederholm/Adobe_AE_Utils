@@ -14,12 +14,18 @@
 // ── Controller · Färg/Rits ───────────────────────────────────
 //
 // Krav:
-//   - Ett null-lager döpt till "controller"
+//   - Ett null-lager döpt till "controller" i Main-compen
 //   - En Dropdown Menu Control på controllern döpt till "Färg/Rits"
 //     med alternativen i denna ordning:
 //       1 = Färg
 //       2 = Rits
 //   - Två lager döpta till "färg" respektive "rits"
+//
+// Nästlade compositions:
+//   controller-nullen ligger i Main-compen medan det här lagret ligger i en
+//   precomp. `thisComp` skulle då peka på precompen, inte på Main – därför
+//   läses controllern via comp("Main"). Byter du namn på Main-compen måste
+//   mainComp nedan uppdateras.
 //
 // Uttrycket multiplicerar inte bort befintlig opacitet – ett valt
 // lager behåller sitt eget värde (t.ex. en inanimerad fade), ett
@@ -27,6 +33,7 @@
 //
 // ─────────────────────────────────────────────────────────────
 
+var mainComp    = "Main";        // Compen där controller-nullen ligger
 var ctrlLager   = "controller";  // Null-lagret med dropdown-menyerna
 var ddNamn      = "Färg/Rits";   // Effektnamn på Dropdown Menu Control
 var namnFarg    = "färg";        // Lagernamn för alternativ 1
@@ -35,16 +42,17 @@ var standardVal = 1;             // Fallback om controller/dropdown saknas
 
 // ─────────────────────────────────────────────────────────────
 
-// Läser en dropdown säkert – saknas lagret eller effekten används fallback
-function ddVarde(lagerNamn, effektNamn, fallback) {
+// Läser en dropdown säkert – saknas compen, lagret eller effekten
+// används fallback
+function ddVarde(compNamn, lagerNamn, effektNamn, fallback) {
     try {
-        return thisComp.layer(lagerNamn).effect(effektNamn)("Menu").value;
+        return comp(compNamn).layer(lagerNamn).effect(effektNamn)("Menu").value;
     } catch (err) {
         return fallback;
     }
 }
 
-var val      = ddVarde(ctrlLager, ddNamn, standardVal);
+var val      = ddVarde(mainComp, ctrlLager, ddNamn, standardVal);
 var mittNamn = thisLayer.name.toLowerCase();
 
 var synlig;
